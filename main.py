@@ -12,7 +12,7 @@ background = pygame.image.load('background.png')
 background = pygame.transform.scale(background, (800, 600)) # resize image to 800x600
 
 # Título e Ícone
-pygame.display.set_caption("Space Invaders")
+pygame.display.set_caption("Xoxota Invaders")
 icon = pygame.image.load('penis.png')
 pygame.display.set_icon(icon)
 
@@ -27,19 +27,32 @@ playerX_change = 0
 enemyImg = pygame.image.load('vagina.png')
 enemyX = random.randint(0,800)
 enemyY = random.randint(50,150)
-enemyX_change = 4 # velocidade de mudança horizontal
+enemyX_change = 3 # velocidade de mudança horizontal
 enemyY_change = 40
 
+# Bullet
+# ready - você não pode ver a bala na tela
+# fire - a bala está se movendo
+bulletImg = pygame.image.load('bullet.png')
+bulletImg = pygame.transform.flip(bulletImg, 0, 1)  #virar imagem
+bulletX = 0
+bulletY = 480
+bulletX_change = 0
+bulletY_change = 4
+bullet_state = "ready"
 
 # Desenhar jogador na tela
 def player(x, y):
     screen.blit(playerImg, (x, y))
 
-
 # Desenhar inimigo na tela
 def enemy(x, y):
     screen.blit(enemyImg, (x, y))
 
+def fire_bullet(x,y):
+    global bullet_state
+    bullet_state = "fire"
+    screen.blit(bulletImg, (x+16, y+10))
 
 # Game Loop
 running = True
@@ -54,6 +67,11 @@ while running:
                 playerX_change = -5
             if event.key == pygame.K_RIGHT:
                 playerX_change = 5
+            if event.key == pygame.K_SPACE:
+                if bullet_state is "ready":
+                    # Pega a coordenada X atual da rola
+                    bulletX = playerX
+                    fire_bullet(bulletX, bulletY)
         if event.type == pygame.KEYUP:  # Verifica se liberou o dedo da tecla
             if event.key == pygame.K_LEFT or event.key == pygame.K_RIGHT:
                 playerX_change = 0
@@ -62,7 +80,7 @@ while running:
     screen.fill((255, 255, 255))
 
     # Imagem do background
-    screen.blit(background, (0,0))
+    screen.blit(background, (0, 0))
 
     # Atribuir valor de posição mudado pra coordenada X
     playerX += playerX_change
@@ -89,9 +107,16 @@ while running:
         enemyX_change = -4
         enemyY += enemyY_change # adiciona pixels toda vez q colide
 
+    # Movimento da bala
+    if bulletY <= 0:
+        bulletY = 480
+        bullet_state = "ready"
+    if bullet_state is "fire":
+        fire_bullet(bulletX, bulletY)
+        bulletY -= bulletY_change
+
     # Iniciar o player com as posições iniciais, função definida lá em cima
     player(playerX, playerY)
-
     # Iniciar inimigo
     enemy(enemyX, enemyY)
 
