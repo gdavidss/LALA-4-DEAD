@@ -1,10 +1,11 @@
-import random
 import math
 from pygame import mixer
 
 # Modules import
 from enemy import *
 from player import *
+
+
 
 # Inicializa o pygame e o mixer
 pygame.init()
@@ -25,13 +26,6 @@ mixer.music.play(-1)
 pygame.display.set_caption("Bota Invaders")
 icon = pygame.image.load('img/penis.png')
 pygame.display.set_icon(icon)
-
-for i in range(num_of_enemies):
-    enemyImg.append(pygame.transform.scale(pygame.image.load('img/enemy.png'), (78, 64)))
-    enemyX.append(random.randint(0,735))
-    enemyY.append(random.randint(50,150))
-    enemyX_change.append(2) # velocidade de mudança horizontal
-    enemyY_change.append(40)
 
 # Bullet
 # ready - você não pode ver a bala na tela
@@ -121,26 +115,39 @@ while running:
 
         # Game Over
         if enemyY[i] > 440:
-            for j in range(num_of_enemies):
-                enemyY[j] = 2000 # inimigos somem da tela
-            game_over_text()
-            break
+            life -= 1
+            print(life)
+            if life <= 0:
+                for j in range(num_of_enemies):
+                    enemyY[j] = 2000 # inimigos somem da tela
+                game_over_text()
+                break
+            else:
+                for x in range(num_of_enemies):
+                    enemyX[x] = random.randint(0, 735)
+                    enemyY[x] = random.randint(50, 150)
+                    enemyX_change[x] = 2  # velocidade de mudança horizontal
+                    enemyY_change[x] = 40
+
 
         enemyX[i] += enemyX_change[i]
         if enemyX[i] <= 0:
             enemyX_change[i] = 2
             enemyY[i] += enemyY_change[i] # adiciona pixels toda vez q colide
-            enemyY_change[i] += random.randint(5,15)
-        elif enemyX[i] >= 736:  # 800 - 64, que é o tamanho da sprite da rola
+            enemyY_change[i] += random.randint(5,12) # creates random Y velocity to improve fun!
+        elif enemyX[i] >= 736:  # 800 - 64, that refers to the sprite size
             enemyX_change[i] = -2
             enemyY[i] += enemyY_change[i] # adiciona pixels toda vez q colide
-            enemyY_change[i] += random.randint(5,15)
+            enemyY_change[i] += random.randint(5,12)
 
             # Colisão
         collision = isCollision(enemyX[i], enemyY[i], bulletX, bulletY)
         if collision:
-            explosion_sound = mixer.Sound('sounds/explosion.wav')
-            explosion_sound.play()
+            # Selects a random audio file from three choices and play it when collision happens
+            reaction_random = "sounds/Reaction" + str(random.randint(1,3)) + ".wav"
+            reaction_sound = mixer.Sound(reaction_random)
+            reaction_sound.play()
+            # reset bullet and enemy
             bulletY = 480
             bullet_state = "ready"
             score_value += 1
