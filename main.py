@@ -1,45 +1,33 @@
-import pygame
 import random
 import math
 from pygame import mixer
+
+# Modules import
+from enemy import *
+from player import *
 
 # Inicializa o pygame e o mixer
 pygame.init()
 mixer.init()
 
-# Criar tela com 800x600 pixels de resolução
+# Create screen with 800x600 pixel resolution
 screen = pygame.display.set_mode((800, 600))
 
 # Background
-background = pygame.image.load('background.png')
+background = pygame.image.load('img/background.png')
 background = pygame.transform.scale(background, (800, 600)) # resize image to 800x600
 
 # Background Sound
-mixer.music.load('background.mp3')
+mixer.music.load('sounds/background.mp3')
 mixer.music.play(-1)
 
 # Título e Ícone
 pygame.display.set_caption("Bota Invaders")
-icon = pygame.image.load('penis.png')
+icon = pygame.image.load('img/penis.png')
 pygame.display.set_icon(icon)
 
-# Jogador
-playerImg = pygame.image.load('penis_player.png')
-playerImg = pygame.transform.flip(playerImg, 0, 1)  #virar imagem
-playerX = 370
-playerY = 480
-playerX_change = 0
-
-# Inimigo
-enemyImg = []
-enemyX = []
-enemyY = []
-enemyX_change = []
-enemyY_change = []
-num_of_enemies = 6
-
 for i in range(num_of_enemies):
-    enemyImg.append(pygame.transform.scale(pygame.image.load('enemy.png'), (78, 64)))
+    enemyImg.append(pygame.transform.scale(pygame.image.load('img/enemy.png'), (78, 64)))
     enemyX.append(random.randint(0,735))
     enemyY.append(random.randint(50,150))
     enemyX_change.append(2) # velocidade de mudança horizontal
@@ -48,12 +36,12 @@ for i in range(num_of_enemies):
 # Bullet
 # ready - você não pode ver a bala na tela
 # fire - a bala está se movendo
-bulletImg = pygame.image.load('bullet.png')
+bulletImg = pygame.image.load('img/bullet.png')
 bulletImg = pygame.transform.flip(bulletImg, 0, 1)  #virar imagem
 bulletX = 0
 bulletY = 480
 bulletX_change = 0
-bulletY_change = 4
+bulletY_change = 8
 bullet_state = "ready"
 
 # Pontuação
@@ -85,7 +73,7 @@ def enemy(x, y, i):
 def fire_bullet(x,y):
     global bullet_state
     bullet_state = "fire"
-    screen.blit(bulletImg, (x+16, y+10))
+    screen.blit(bulletImg, (x+16, y+10)) # Bullet stay on the middle
 
 def isCollision(enemyX, enemyY, bulletX, bulletY):
     # Distância entre duas coordenadas abaixo
@@ -109,7 +97,7 @@ while running:
             if event.key == pygame.K_RIGHT:
                 playerX_change = 5
             if event.key == pygame.K_SPACE:
-                bullet_sound = mixer.Sound('bullet.wav')
+                bullet_sound = mixer.Sound('sounds/bullet.wav')
                 bullet_sound.play()
                 if bullet_state is "ready":
                     # Pega a coordenada X atual da rola
@@ -142,14 +130,16 @@ while running:
         if enemyX[i] <= 0:
             enemyX_change[i] = 2
             enemyY[i] += enemyY_change[i] # adiciona pixels toda vez q colide
+            enemyY_change[i] += random.randint(5,15)
         elif enemyX[i] >= 736:  # 800 - 64, que é o tamanho da sprite da rola
             enemyX_change[i] = -2
             enemyY[i] += enemyY_change[i] # adiciona pixels toda vez q colide
+            enemyY_change[i] += random.randint(5,15)
 
-        # Colisão
+            # Colisão
         collision = isCollision(enemyX[i], enemyY[i], bulletX, bulletY)
         if collision:
-            explosion_sound = mixer.Sound('explosion.wav')
+            explosion_sound = mixer.Sound('sounds/explosion.wav')
             explosion_sound.play()
             bulletY = 480
             bullet_state = "ready"
@@ -165,7 +155,7 @@ while running:
         bulletY = 480
         bullet_state = "ready"
 
-    if bullet_state is "fire":
+    if bullet_state == "fire":
         fire_bullet(bulletX, bulletY)
         bulletY -= bulletY_change
 
