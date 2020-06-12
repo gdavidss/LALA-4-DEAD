@@ -52,6 +52,10 @@ def show_score(x,y):
     score = font.render("Botadas: " + str(score_value), True, (0,0,0))
     screen.blit(score, (x, y))
 
+def show_life(x,y):
+    life_show = font.render("Life: " + str(life), True, (0,0,0))
+    screen.blit(life_show, (x, y))
+
 def game_over_text():
     over_text = over_font.render("NÃO BOTASTE", True, (0,0,0))
     screen.blit(over_text, (200, 250))
@@ -121,6 +125,7 @@ while running:
                 for j in range(num_of_enemies):
                     enemyY[j] = 2000 # inimigos somem da tela
                 game_over_text()
+                life = 0
                 break
             else:
                 for x in range(num_of_enemies):
@@ -171,6 +176,9 @@ while running:
 
     # mostrar pontuação na tela
     show_score(textX, textY)
+
+    # mostrar pontuação na tela
+    show_life(690, 10)
 
     # Tem que atualizar a tela no loop se não vai ficar a mesma coisa
     pygame.display.update()
