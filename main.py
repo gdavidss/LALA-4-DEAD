@@ -5,8 +5,6 @@ from pygame import mixer
 from enemy import *
 from player import *
 
-
-
 # Inicializa o pygame e o mixer
 pygame.init()
 mixer.init()
@@ -19,23 +17,23 @@ background = pygame.image.load('img/background.png')
 background = pygame.transform.scale(background, (800, 600)) # resize image to 800x600
 
 # Background Sound
-mixer.music.load('sounds/background.mp3')
-mixer.music.play(-1)
+#mixer.music.load('sounds/background.mp3')
+#mixer.music.play(-1)
 
 # Título e Ícone
-pygame.display.set_caption("Bota Invaders")
-icon = pygame.image.load('img/penis.png')
+pygame.display.set_caption("LALA Invaders")
+icon = pygame.image.load('img/player.png')
 pygame.display.set_icon(icon)
 
 # Bullet
 # ready - você não pode ver a bala na tela
 # fire - a bala está se movendo
-bulletImg = pygame.image.load('img/bullet.png')
+bulletImg = pygame.transform.scale(pygame.image.load('img/flame.gif'), (32, 32))
 bulletImg = pygame.transform.flip(bulletImg, 0, 1)  #virar imagem
 bulletX = 0
 bulletY = 480
 bulletX_change = 0
-bulletY_change = 8
+bulletY_change = 7
 bullet_state = "ready"
 
 # Pontuação
@@ -49,7 +47,7 @@ textY = 10
 over_font = pygame.font.Font('freesansbold.ttf', 64)
 
 def show_score(x,y):
-    score = font.render("Botadas: " + str(score_value), True, (0,0,0))
+    score = font.render("Score: " + str(score_value), True, (0,0,0))
     screen.blit(score, (x, y))
 
 def show_life(x,y):
@@ -57,7 +55,7 @@ def show_life(x,y):
     screen.blit(life_show, (x, y))
 
 def game_over_text():
-    over_text = over_font.render("NÃO BOTASTE", True, (0,0,0))
+    over_text = over_font.render("GAME OVER", True, (0,0,0))
     screen.blit(over_text, (200, 250))
 
 # Desenhar jogador na tela
@@ -95,7 +93,7 @@ while running:
             if event.key == pygame.K_RIGHT:
                 playerX_change = 5
             if event.key == pygame.K_SPACE:
-                bullet_sound = mixer.Sound('sounds/bullet.wav')
+                bullet_sound = mixer.Sound('sounds/Explosion13.ogg')
                 bullet_sound.play()
                 if bullet_state is "ready":
                     # Pega a coordenada X atual da rola
@@ -122,6 +120,8 @@ while running:
             life -= 1
             print(life)
             if life <= 0:
+                gameover_sound = mixer.Sound('sounds/GameOver.ogg')
+                gameover_sound.play()
                 for j in range(num_of_enemies):
                     enemyY[j] = 2000 # inimigos somem da tela
                 game_over_text()
