@@ -38,13 +38,13 @@ bullet_state = "ready"
 
 # Pontuação
 score_value = 0
-font = pygame.font.Font('freesansbold.ttf', 32)
+font = pygame.font.Font('8BitMadness.ttf', 42)
 
 textX = 10
 textY = 10
 
 # Texto de Game Over
-over_font = pygame.font.Font('freesansbold.ttf', 64)
+over_font = pygame.font.Font('8BitMadness.ttf', 90)
 
 def show_score(x,y):
     score = font.render("Score: " + str(score_value), True, (0,0,0))
@@ -79,10 +79,13 @@ def isCollision(enemyX, enemyY, bulletX, bulletY):
     else:
         return False
 
+# Clock helps to stabilize fps
+clock = pygame.time.Clock()
+
 # Game Loop
 running = True
 while running:
-
+    clock.tick(200)
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
@@ -112,6 +115,12 @@ while running:
     # Atribuir valor de posição mudado pra coordenada X
     playerX += playerX_change
 
+    # Makes player not escape screen
+    if playerX <= 0:
+        playerX = 0
+    elif playerX >= 736:  # 800 - 64, that refers to the sprite size
+        playerX = 736
+
     # Movimento do inimigo com bate e volta nas laterais
     for i in range(num_of_enemies):
 
@@ -121,12 +130,12 @@ while running:
             print(life)
             if life <= 0:
                 gameover_sound = mixer.Sound('sounds/GameOver.ogg')
-                gameover_sound.play()
                 for j in range(num_of_enemies):
                     enemyY[j] = 2000 # inimigos somem da tela
                 game_over_text()
                 life = 0
                 break
+                gameover_sound.play()
             else:
                 for x in range(num_of_enemies):
                     enemyX[x] = random.randint(0, 735)
@@ -137,13 +146,13 @@ while running:
 
         enemyX[i] += enemyX_change[i]
         if enemyX[i] <= 0:
-            enemyX_change[i] = 2
+            enemyX_change[i] = 1
             enemyY[i] += enemyY_change[i] # adiciona pixels toda vez q colide
-            enemyY_change[i] += random.randint(5,12) # creates random Y velocity to improve fun!
+            enemyY_change[i] += random.randint(5,15) # creates random Y velocity to improve fun!
         elif enemyX[i] >= 736:  # 800 - 64, that refers to the sprite size
-            enemyX_change[i] = -2
+            enemyX_change[i] = -1
             enemyY[i] += enemyY_change[i] # adiciona pixels toda vez q colide
-            enemyY_change[i] += random.randint(5,12)
+            enemyY_change[i] += random.randint(5,15)
 
             # Colisão
         collision = isCollision(enemyX[i], enemyY[i], bulletX, bulletY)
@@ -178,7 +187,7 @@ while running:
     show_score(textX, textY)
 
     # mostrar pontuação na tela
-    show_life(690, 10)
+    show_life(670, 10)
 
     # Tem que atualizar a tela no loop se não vai ficar a mesma coisa
     pygame.display.update()
