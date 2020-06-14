@@ -93,8 +93,6 @@ def game_over_text():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 quit()
-            if event.type == pygame.K_c:
-                main()
 
 # Draw player on screen
 def player(x, y):
@@ -145,9 +143,9 @@ while running:
 
         if event.type == pygame.KEYDOWN:  # Verifies if key has been pressed
             if event.key == pygame.K_LEFT:
-                playerX_change = -5
+                playerX_change = -4
             elif event.key == pygame.K_RIGHT:
-                playerX_change = 5
+                playerX_change = 4
             elif event.key == pygame.K_SPACE:
                 bullet_sound = mixer.Sound('sounds/bullet.ogg')
                 if bullet_state is "ready":
@@ -156,9 +154,13 @@ while running:
                     bullet_sound.play()
             elif event.key == pygame.K_p:
                 pause()
-        if event.type == pygame.KEYUP: # Verifies if key has been released
-            if event.key == pygame.K_LEFT or event.key == pygame.K_RIGHT:
-                playerX_change = 0
+        """
+        Player stops moving when key has been released
+        Deactivated due to a bug and because it's more fun without it
+            elif event.type == pygame.KEYUP: 
+                if event.key == pygame.K_LEFT or event.key == pygame.K_RIGHT:
+                    playerX_change = 0
+        """
 
     # Pintar a tela com RGB
     screen.fill((255, 255, 255))
@@ -206,10 +208,10 @@ while running:
 
         enemyX[i] += enemyX_change[i]
         if enemyX[i] <= 0:
-            enemyX_change[i] = random.randint(1,4)
+            enemyX_change[i] = random.randint(1,3)
             enemyY[i] += enemyY_change[i] # adiciona pixels toda vez q colide
         elif enemyX[i] >= 736:  # 800 - 64, that refers to the sprite size
-            enemyX_change[i] = -random.randint(1,4)
+            enemyX_change[i] = -random.randint(1,3)
             enemyY[i] += enemyY_change[i] # adiciona pixels toda vez q colide
 
             # Colisão
