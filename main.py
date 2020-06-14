@@ -8,7 +8,7 @@ from player import *
 
 # Init pygame and sound mixer
 pygame.init()
-mixer.init()
+pygame.mixer.init()
 
 # Init Gameover sound state
 GameOverSound_state = True
@@ -19,8 +19,8 @@ screen = pygame.display.set_mode((800, 600))
 # Background image and sound
 background = pygame.image.load('img/background.png')
 background = pygame.transform.scale(background, (800, 600)) # resize image to 800x600
-#mixer.music.load('sounds/background.mp3')
-#mixer.music.play(-1)
+mixer.music.load('sounds/background.ogg')
+mixer.music.play(-1)
 
 # Title and Icon
 pygame.display.set_caption("Diego Invaders")
@@ -47,6 +47,28 @@ font = pygame.font.Font('8BitMadness.ttf', 42)
 over_font = pygame.font.Font('8BitMadness.ttf', 90)
 
 """""-- Functions --"""
+def pause():
+    """
+    pauses the game
+    """
+    paused = True
+    while paused:
+        for event in pygame.event.get():
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_p:
+                    # add pause song
+                    paused = False
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                quit()
+
+        screen.blit(font.render("Game Paused", True, (0,0,0)), (300,250))
+      #  message_to_screen("Paused", black, -100, size="large")
+       # message_to_screen("Press C to continue or Q to quit.", black, 25)
+        pygame.display.update()
+        clock.tick(5)
+
+
 def show_score(x,y):
     score = font.render("Score: " + str(score_value), True, (0,0,0))
     screen.blit(score, (x, y))
@@ -60,8 +82,19 @@ def show_level(x,y):
     screen.blit(level_show, (x, y))
 
 def game_over_text():
-    over_text = over_font.render("GAME OVER", True, (0,0,0))
+    pygame.mixer.music.pause()
+    gameover = True
+    over_text = over_font.render("GAME OVER", True, (0, 0, 0))
     screen.blit(over_text, (200, 250))
+    while gameover:
+        pygame.display.update()
+        clock.tick(5) # game doesn't need 30 fps
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                quit()
+            if event.type == pygame.K_c:
+                main()
 
 # Draw player on screen
 def player(x, y):
@@ -113,14 +146,16 @@ while running:
         if event.type == pygame.KEYDOWN:  # Verifies if key has been pressed
             if event.key == pygame.K_LEFT:
                 playerX_change = -5
-            if event.key == pygame.K_RIGHT:
+            elif event.key == pygame.K_RIGHT:
                 playerX_change = 5
-            if event.key == pygame.K_SPACE:
+            elif event.key == pygame.K_SPACE:
                 bullet_sound = mixer.Sound('sounds/bullet.ogg')
                 if bullet_state is "ready":
                     bulletX = playerX
                     fire_bullet(bulletX, bulletY)
                     bullet_sound.play()
+            elif event.key == pygame.K_p:
+                pause()
         if event.type == pygame.KEYUP: # Verifies if key has been released
             if event.key == pygame.K_LEFT or event.key == pygame.K_RIGHT:
                 playerX_change = 0
