@@ -116,7 +116,7 @@ while running:
             if event.key == pygame.K_RIGHT:
                 playerX_change = 5
             if event.key == pygame.K_SPACE:
-                bullet_sound = mixer.Sound('sounds/Explosion13.ogg')
+                bullet_sound = mixer.Sound('sounds/bullet.ogg')
                 if bullet_state is "ready":
                     bulletX = playerX
                     fire_bullet(bulletX, bulletY)
@@ -147,11 +147,14 @@ while running:
         if enemyY[i] > 440:
             life -= 1
             # add live lost sound here
+            if life > 0:
+                lifelost_sound = mixer.Sound('sounds/LifeLost.wav')
+                lifelost_sound.play()
             if life <= 0:
-                gameover_sound = mixer.Sound('sounds/GameOver.ogg')
+                gameover_sound = mixer.Sound('sounds/GameOver.wav')
                 if GameOverSound_state:
                     gameover_sound.play()
-                    GameOverSound_state = False
+                GameOverSound_state = False
                 for j in range(num_of_enemies):
                     enemyY[j] = 2000 # Enemies get out of screen
                 game_over_text()
@@ -178,7 +181,7 @@ while running:
         collision = isCollision(enemyX[i], enemyY[i], bulletX, bulletY)
         if collision:
             # Selects a random audio file from three choices and play it when collision happens
-            reaction_random = "sounds/Reaction" + str(random.randint(1,21)) + ".wav"
+            reaction_random = "sounds/Reaction" + str(random.randint(1,11)) + ".wav"
             reaction_sound = mixer.Sound(reaction_random)
             reaction_sound.play()
             # reset bullet and enemy
