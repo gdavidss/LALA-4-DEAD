@@ -1,10 +1,8 @@
 import math
+import pygame
+import random
 from pygame import mixer
 from pygame.locals import *
-
-# Modules import
-from enemy import *
-from player import *
 
 # Init pygame and sound mixer
 pygame.init()
@@ -27,44 +25,58 @@ pygame.display.set_caption("Diego Invaders")
 icon = pygame.image.load('img/player.png')
 pygame.display.set_icon(icon)
 
-# Bullet
-# ready - você não pode ver a bala na tela
-# fire - a bala está se movendo
-bulletImg = pygame.transform.scale(pygame.image.load('img/flame.gif'), (32, 32))
-bulletImg = pygame.transform.flip(bulletImg, 0, 1)  #virar imagem
-bulletX = 0
-bulletY = 480
-bulletX_change = 0
-bulletY_change = 7
-bullet_state = "ready"
+"""""-- Timers --"""
+# Clock helps to limit fps
+clock = pygame.time.Clock()
 
-# Score and level
-level = 1
-score_value = 0
-font = pygame.font.Font('8BitMadness.ttf', 42)
+# Set a timer for every 10 sec to spawn enemy
+pygame.time.set_timer(USEREVENT, 10000)
 
-# GameOver text
-over_font = pygame.font.Font('8BitMadness.ttf', 90)
+# Set a timer for every minute to unlock bonus
+pygame.time.set_timer(USEREVENT+1, 5000)
+
+"""-- Player --"""
+life = 3
+playerImg = pygame.image.load('img/player.png')
+playerX = 370
+playerY = 480
+playerX_change = 0
+
+"""-- Enemy --"""
+enemyImg = []
+enemyX = []
+enemyY = []
+enemyX_change = []
+enemyY_change = []
+num_of_enemies = 1
+
+for i in range(num_of_enemies):
+    enemyImg.append(pygame.transform.scale(pygame.image.load('img/enemy.png'), (80, 64)))
+    enemyX.append(random.randint(0,735))
+    enemyY.append(random.randint(50,150))
+    enemyX_change.append(random.randint(1,4)) # velocidade de mudança horizontal
+    enemyY_change.append(40)
 
 """""-- Functions --"""
 def pause():
     """
     pauses the game
     """
+    pause_sound = mixer.Sound('sounds/pause.ogg')
+    pause_sound.play()
     paused = True
     while paused:
         for event in pygame.event.get():
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_p:
                     # add pause song
+                    pause_sound.play()
                     paused = False
             if event.type == pygame.QUIT:
                 pygame.quit()
                 quit()
-
         screen.blit(font.render("Game Paused", True, (0,0,0)), (300,250))
-      #  message_to_screen("Paused", black, -100, size="large")
-       # message_to_screen("Press C to continue or Q to quit.", black, 25)
+        screen.blit(font.render("Press P to continue", True, (0, 0, 0)), (250, 300))
         pygame.display.update()
         clock.tick(5)
 
@@ -115,14 +127,49 @@ def isCollision(enemyX, enemyY, bulletX, bulletY):
     else:
         return False
 
-"""""-- Timers --"""
-# Clock helps to limit fps
-clock = pygame.time.Clock()
-
-# Set a timer for every 10 sec
-pygame.time.set_timer(USEREVENT, 10000)
-
 """""-- Game loop --"""
+# Bullet
+# ready - você não pode ver a bala na tela
+# fire - a bala está se movendo
+bulletImg = pygame.transform.scale(pygame.image.load('img/flame.gif'), (32, 32))
+bulletImg = pygame.transform.flip(bulletImg, 0, 1)  # virar imagem
+bulletX = 0
+bulletY = 480
+bulletX_change = 0
+bulletY_change = 7
+bullet_state = "ready"
+
+# Score and level
+level = 1
+score_value = 0
+font = pygame.font.Font('8BitMadness.ttf', 42)
+
+# GameOver text
+over_font = pygame.font.Font('8BitMadness.ttf', 90)
+
+# Jogador
+life = 3
+playerImg = pygame.image.load('img/player.png')
+playerX = 370
+playerY = 480
+playerX_change = 0
+
+# Inimigo
+enemyImg = []
+enemyX = []
+enemyY = []
+enemyX_change = []
+enemyY_change = []
+num_of_enemies = 1
+
+for i in range(num_of_enemies):
+    enemyImg.append(pygame.transform.scale(pygame.image.load('img/enemy.png'), (80, 64)))
+    enemyX.append(random.randint(0, 735))
+    enemyY.append(random.randint(50, 150))
+    enemyX_change.append(random.randint(1, 4))  # velocidade de mudança horizontal
+    enemyY_change.append(40)
+
+"""-- Game Loop --"""
 running = True
 while running:
     clock.tick(100)
@@ -140,27 +187,33 @@ while running:
                 enemyY.append(random.randint(50, 150))
                 enemyX_change.append(random.randint(1,4))  # Horizontal velocity change
                 enemyY_change.append(40)
+            spawn_sound = mixer.Sound('sounds/SpawnSound.ogg')
+            spawn_sound.play()
+        # Bonus event
+        if event.type == USEREVENT+1:
+            screen.blit(font.render("Press CTRL to bonus", True, (5, 5, 5)), (10, 550))
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_LCTRL:
+                    screen.blit(background, (0, 0))
 
         if event.type == pygame.KEYDOWN:  # Verifies if key has been pressed
             if event.key == pygame.K_LEFT:
-                playerX_change = -4
-            elif event.key == pygame.K_RIGHT:
-                playerX_change = 4
-            elif event.key == pygame.K_SPACE:
+                playerX_change = -4.5
+            if event.key == pygame.K_RIGHT:
+                playerX_change = 4.5
+            if event.key == pygame.K_SPACE:
                 bullet_sound = mixer.Sound('sounds/bullet.ogg')
                 if bullet_state is "ready":
                     bulletX = playerX
                     fire_bullet(bulletX, bulletY)
                     bullet_sound.play()
-            elif event.key == pygame.K_p:
+            if event.key == pygame.K_p:
                 pause()
-        """
-        Player stops moving when key has been released
-        Deactivated due to a bug and because it's more fun without it
-            elif event.type == pygame.KEYUP: 
-                if event.key == pygame.K_LEFT or event.key == pygame.K_RIGHT:
-                    playerX_change = 0
-        """
+        if event.type == pygame.KEYUP:
+            if event.key == pygame.K_LEFT:
+                playerX_change = 0
+            if event.key == pygame.K_RIGHT:
+                playerX_change = 0
 
     # Pintar a tela com RGB
     screen.fill((255, 255, 255))
@@ -218,7 +271,7 @@ while running:
         collision = isCollision(enemyX[i], enemyY[i], bulletX, bulletY)
         if collision:
             # Selects a random audio file from three choices and play it when collision happens
-            reaction_random = "sounds/Reaction" + str(random.randint(1,11)) + ".wav"
+            reaction_random = "sounds/Reaction" + str(random.randint(1,5)) + ".wav"
             reaction_sound = mixer.Sound(reaction_random)
             reaction_sound.play()
             # reset bullet and enemy
