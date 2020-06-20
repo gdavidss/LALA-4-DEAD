@@ -8,9 +8,9 @@ from pygame.locals import *
 # Initialize pygame, sound mixer, screen and font
 pygame.init()
 #pygame.mixer.init()
-WIDTH = 800
-HEIGHT = 600
+WIDTH, HEIGHT = 800, 600
 SCREEN = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("LALA Invaders")
 
 # Load images
 BACKGROUND_IMG = pygame.image.load(os.path.join("img", "background.png"))
@@ -22,16 +22,11 @@ BULLET_IMG = pygame.image.load(os.path.join("img", "flame.gif"))
 BULLET_IMG = pygame.transform.scale(BULLET_IMG, (32, 32))
 BULLET_IMG = pygame.transform.flip(BULLET_IMG, 0, 1)
 ENEMY_IMG = pygame.transform.scale(ENEMY_IMG, (80, 64))
-BACKGROUND_IMG = pygame.transform.scale(BACKGROUND_IMG, (WIDTH, HEIGHT))  # resize image to 800x600
-
+BACKGROUND_IMG = pygame.transform.scale(BACKGROUND_IMG, (WIDTH, HEIGHT))
 
 # Background and sound
 ##mixer.music.load('sounds/background.ogg')
 ##mixer.music.play(-1)
-
-# Title and Icon
-pygame.display.set_caption("LALA Invaders")
-pygame.display.set_icon(PLAYER_IMG)
 
 """""-- Timers --"""
 # Clock helps to limit fps
@@ -67,6 +62,7 @@ def pause():
         pygame.display.update()
         clock.tick(5)
 
+""""
 def game_over_text():
     pygame.mixer.music.pause()
     gameover = True
@@ -81,10 +77,6 @@ def game_over_text():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 quit()
-
-# Draw player on SCREEN
-def player(x, y):
-    SCREEN.blit(PLAYER_IMG, (x, y))
 
 
 # Draw enemy on SCREEN
@@ -104,12 +96,39 @@ def is_collision(enemyX, enemyY, bulletX, bulletY):
         return True
     else:
         return False
+"""
 
 class Character:
     def __init__(self, x, y):
         self.x = x
         self.y = y
+        self.character_img = None
+        self.cool_down_counter = 0
 
+    def draw(self, window):
+        window.blit(self.character_img, (self.x, self.y))
+
+    def get_width(self):
+        return self.character_img.get_width()
+
+
+class Player(Character):
+    def __init__(self, x, y):
+        super().__init__(x, y)
+        self.character_img = PLAYER_IMG
+        self.mask = pygame.mask.from_surface(self.character_img)
+
+    def draw(self, window):
+        super().draw(window)
+
+class Enemy(Character):
+    def __init__(self, x, y):
+        super().__init__(x, y)
+        self.character_img = ENEMY_IMG
+        self.mask = pygame.mask.from_surface(self.character_img)
+
+    def move(self, vel):
+        self.y += vel
 
 def game():
     """""-- Variables --"""
@@ -123,10 +142,11 @@ def game():
 
     GAME_FONT = pygame.font.SysFont(("8BitMadness.ttf"), 42)
 
+    running = True
+    FPS = 100
     # Bullet
     bulletX = 0
     bulletY = 480
-    bulletX_change = 0
     bulletY_change = 7
     bullet_state = "ready"
 
@@ -135,11 +155,10 @@ def game():
     score_value = 0
 
     # Jogador
+    player = Player(370, 480)
     life_value = 3
-    playerX = 370
-    playerY = 480
-    playerX_change = 0
-
+    player_vel = 4.5
+    """"
     # Inimigo
     enemy_body = []
     enemyX = []
@@ -147,7 +166,8 @@ def game():
     enemyX_change = []
     enemyY_change = []
     num_of_enemies = 1
-
+    
+    
     for i in range(num_of_enemies):
         enemy_body.append(ENEMY_IMG)
         enemyX.append(random.randint(0, 735))
@@ -155,16 +175,14 @@ def game():
         # Attributes a random horizontal velocity to enemy
         enemyX_change.append(random.randint(1, 4))
         enemyY_change.append(40)
+    """
 
     # Init Gameover sound state
     ##GameOverSound_state = True
 
-    # Game Loop
-    running = True
-    FPS = 100
-
     def redraw_window():
-        #SCREEN.blit(BACKGROUND_IMG, (0, 0))
+        SCREEN.blit(BACKGROUND_IMG, (0, 0))
+        player.draw(SCREEN)
         score_text = GAME_FONT.render(f"Score: {score_value}", 1, (0, 0, 0))
         life_text = GAME_FONT.render(f"Life: {life_value}", 1, (0, 0, 0))
         level_text = GAME_FONT.render(f"Level: {level_value}", 1, (0, 0, 0))
@@ -173,7 +191,7 @@ def game():
         SCREEN.blit(level_text, ((WIDTH - level_text.get_width())//2, 10))
         pygame.display.update()
 
-
+    # Game Loop
     while running:
         clock.tick(FPS)
         redraw_window()
@@ -182,7 +200,7 @@ def game():
             if event.type == pygame.QUIT:
                 running = False
                 quit()
-
+            """""
             # Spawn diego after 10 seconds
             if event.type == USEREVENT:
                 level_value += 1
@@ -200,43 +218,29 @@ def game():
                 SCREEN.blit(GAME_FONT.render("Press CTRL to bonus", True, (5, 5, 5)), (10, 550))
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_LCTRL:
-                        SCREEN.blit(BACKGROUND_IMG, (0, 0))
+                       pass
 
-            if event.type == pygame.KEYDOWN:  # Verifies if key has been pressed
-                if event.key == pygame.K_LEFT:
-                    playerX_change = -4.5
-                if event.key == pygame.K_RIGHT:
-                    playerX_change = 4.5
-                if event.key == pygame.K_SPACE:
                     ##bullet_sound = mixer.Sound('sounds/bullet.ogg')
                     if bullet_state == "ready":
-                        bulletX = playerX
+                        bulletX = player.x
                         bullet_state = "fire"
                         fire_bullet(bulletX, bulletY)
                         ##bullet_sound.play()
-                if event.key == pygame.K_p:
-                    pause()
-            if event.type == pygame.KEYUP:
-                if event.key == pygame.K_LEFT:
-                    playerX_change = 0
-                if event.key == pygame.K_RIGHT:
-                    playerX_change = 0
+            """
+        # Movement dynamics that allow two keys to be pressed simultaneously
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_LEFT] and player.x - player_vel > 0:
+            player.x -= player_vel
+            print(player.x)
+        if keys[pygame.K_RIGHT] and player.x + player_vel + player.get_width() < WIDTH:
+            player.x += player_vel
+            print(player.x)
+        if keys[pygame.K_p]:
+            pause()
 
-        # Imagem do background
-        SCREEN.blit(BACKGROUND_IMG, (0, 0))
-
-        # Atribuir valor de posição mudado pra coordenada X
-        playerX += playerX_change
-
-        # Makes player not escape SCREEN
-        if playerX <= 0:
-            playerX = 0
-        elif playerX >= 736:  # 800 - 64, that refers to the sprite size
-            playerX = 736
-
+        """"
         # Movimento do inimigo com bate e volta nas laterais
         for i in range(num_of_enemies):
-
             # Game Over
             if enemyY[i] > 440:
                 life -= 1
@@ -297,10 +301,7 @@ def game():
         if bullet_state == "fire":
             fire_bullet(bulletX, bulletY)
             bulletY -= bulletY_change
-
-        # Iniciar o player com as posições iniciais, função definida lá em cima
-        player(playerX, playerY)
-
+        """
 def main_menu():
     while True:
         SCREEN.blit(BACKGROUND_IMG, (0, 0))
@@ -327,5 +328,5 @@ def main_menu():
         clock.tick(60)
         pygame.display.update()
 
-main_menu()
+game()
 """-- Game Loop --"""
