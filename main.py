@@ -1,29 +1,37 @@
-import math
+import math, random
+import sys
 import pygame
-import random
+import os
 from pygame import mixer
 from pygame.locals import *
 
-# Init pygame and sound mixer
+# Initialize pygame, sound mixer, screen and font
 pygame.init()
-pygame.mixer.init()
+#pygame.mixer.init()
+WIDTH = 800
+HEIGHT = 600
+SCREEN = pygame.display.set_mode((WIDTH, HEIGHT))
 
-# Create screen with 800x600 pixel resolution
-screen = pygame.display.set_mode((800, 600))
+# Load images
+BACKGROUND_IMG = pygame.image.load(os.path.join("img", "background.png"))
+PLAYER_IMG = pygame.image.load(os.path.join("img", "player.png"))
+ENEMY_IMG = pygame.image.load(os.path.join("img", "enemy.png"))
+BULLET_IMG = pygame.image.load(os.path.join("img", "flame.gif"))
 
-# Load font
-font = pygame.font.Font('8BitMadness.ttf', 42)
+# Appropriate image transformations
+BULLET_IMG = pygame.transform.scale(BULLET_IMG, (32, 32))
+BULLET_IMG = pygame.transform.flip(BULLET_IMG, 0, 1)
+ENEMY_IMG = pygame.transform.scale(ENEMY_IMG, (80, 64))
+BACKGROUND_IMG = pygame.transform.scale(BACKGROUND_IMG, (WIDTH, HEIGHT))  # resize image to 800x600
 
-# Background image and sound
-background = pygame.image.load('img/background.png')
-background = pygame.transform.scale(background, (800, 600))  # resize image to 800x600
-mixer.music.load('sounds/background.ogg')
-mixer.music.play(-1)
+
+# Background and sound
+##mixer.music.load('sounds/background.ogg')
+##mixer.music.play(-1)
 
 # Title and Icon
-pygame.display.set_caption("Diego Invaders")
-icon = pygame.image.load('img/player.png')
-pygame.display.set_icon(icon)
+pygame.display.set_caption("LALA Invaders")
+pygame.display.set_icon(PLAYER_IMG)
 
 """""-- Timers --"""
 # Clock helps to limit fps
@@ -41,47 +49,31 @@ def pause():
     """
     pauses the game
     """
-    pause_sound = mixer.Sound('sounds/pause.ogg')
-    pause_sound.play()
+   ## pause_sound = mixer.Sound('sounds/pause.ogg')
+   ## pause_sound.play()
     paused = True
     while paused:
         for event in pygame.event.get():
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_p:
                     # add pause song
-                    pause_sound.play()
+                   ## pause_sound.play()
                     paused = False
             if event.type == pygame.QUIT:
                 pygame.quit()
                 quit()
-        screen.blit(font.render("Game Paused", True, (0, 0, 0)), (300, 250))
-        screen.blit(font.render("Press P to continue", True, (0, 0, 0)), (250, 300))
+        SCREEN.blit(GAME_FONT.render("Game Paused", True, (0, 0, 0)), (300, 250))
+        SCREEN.blit(GAME_FONT.render("Press P to continue", True, (0, 0, 0)), (250, 300))
         pygame.display.update()
         clock.tick(5)
-
-
-def show_score(x, y):
-    score = font.render("Score: " + str(score_value), True, (0, 0, 0))
-    screen.blit(score, (x, y))
-
-
-def show_life(x, y):
-    life_show = font.render("Life: " + str(life), True, (0, 0, 0))
-    screen.blit(life_show, (x, y))
-
-
-def show_level(x, y):
-    level_show = font.render("Level: " + str(level), True, (0, 0, 0))
-    screen.blit(level_show, (x, y))
-
 
 def game_over_text():
     pygame.mixer.music.pause()
     gameover = True
     # GameOver text
-    over_font = pygame.font.Font('8BitMadness.ttf', 90)
-    over_text = over_font.render("GAME OVER", True, (0, 0, 0))
-    screen.blit(over_text, (200, 250))
+    over_GAME_FONT = pygame.GAME_FONT.GAME_FONT('8BitMadness.ttf', 90)
+    over_text = over_GAME_FONT.render("GAME OVER", True, (0, 0, 0))
+    SCREEN.blit(over_text, (200, 250))
     while gameover:
         pygame.display.update()
         clock.tick(5)  # game doesn't need 30 fps
@@ -90,20 +82,20 @@ def game_over_text():
                 pygame.quit()
                 quit()
 
-
-# Draw player on screen
+# Draw player on SCREEN
 def player(x, y):
-    screen.blit(playerImg, (x, y))
+    SCREEN.blit(PLAYER_IMG, (x, y))
 
 
-# Draw enemy on screen
+# Draw enemy on SCREEN
 def enemy(x, y, i):
-    screen.blit(enemyImg[i], (x, y))
+    SCREEN.blit(enemy_body[i], (x, y))
 
 
 def fire_bullet(x, y):
     #bullet_state = "fire"
-    screen.blit(bulletImg, (x + 16, y + 10))  # Bullet stay on the middle
+    SCREEN.blit(BULLET_IMG, (x + 16, y + 10))  # Bullet stay on the middle
+
 
 def is_collision(enemyX, enemyY, bulletX, bulletY):
     # Distance between two coordenates
@@ -113,42 +105,43 @@ def is_collision(enemyX, enemyY, bulletX, bulletY):
     else:
         return False
 
-"""-- Game Loop --"""
+class Character:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
 
 
-def main():
+def game():
     """""-- Variables --"""
+    # GLOBAL VARIABLES
+    global enemy_body
+    global bullet_state
+    global level_value
+    global score_value
+    global life_value
+    global GAME_FONT
+
+    GAME_FONT = pygame.font.SysFont(("8BitMadness.ttf"), 42)
+
     # Bullet
-    # ready - você não pode ver a bala na tela
-    # fire - a bala está se movendo
-    global bulletImg
-    bulletImg = pygame.transform.scale(pygame.image.load('img/flame.gif'), (32, 32))
-    bulletImg = pygame.transform.flip(bulletImg, 0, 1)  # virar imagem
     bulletX = 0
     bulletY = 480
     bulletX_change = 0
     bulletY_change = 7
-    global bullet_state
     bullet_state = "ready"
 
     # Score and levelscore_value
-    global level
-    level = 1
-    global score_value
+    level_value = 1
     score_value = 0
 
     # Jogador
-    global life
-    life = 3
-    global playerImg
-    playerImg = pygame.image.load('img/player.png')
+    life_value = 3
     playerX = 370
     playerY = 480
     playerX_change = 0
 
     # Inimigo
-    global enemyImg
-    enemyImg = []
+    enemy_body = []
     enemyX = []
     enemyY = []
     enemyX_change = []
@@ -156,41 +149,58 @@ def main():
     num_of_enemies = 1
 
     for i in range(num_of_enemies):
-        enemyImg.append(pygame.transform.scale(pygame.image.load('img/enemy.png'), (80, 64)))
+        enemy_body.append(ENEMY_IMG)
         enemyX.append(random.randint(0, 735))
         enemyY.append(random.randint(50, 150))
-        enemyX_change.append(random.randint(1, 4))  # velocidade de mudança horizontal
+        # Attributes a random horizontal velocity to enemy
+        enemyX_change.append(random.randint(1, 4))
         enemyY_change.append(40)
 
     # Init Gameover sound state
-    GameOverSound_state = True
+    ##GameOverSound_state = True
 
     # Game Loop
     running = True
+    FPS = 100
+
+    def redraw_window():
+        #SCREEN.blit(BACKGROUND_IMG, (0, 0))
+        score_text = GAME_FONT.render(f"Score: {score_value}", 1, (0, 0, 0))
+        life_text = GAME_FONT.render(f"Life: {life_value}", 1, (0, 0, 0))
+        level_text = GAME_FONT.render(f"Level: {level_value}", 1, (0, 0, 0))
+        SCREEN.blit(score_text, (10, 10))
+        SCREEN.blit(life_text, (WIDTH - level_text.get_width() + 10, 10))
+        SCREEN.blit(level_text, ((WIDTH - level_text.get_width())//2, 10))
+        pygame.display.update()
+
+
     while running:
-        clock.tick(100)
+        clock.tick(FPS)
+        redraw_window()
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+                quit()
 
             # Spawn diego after 10 seconds
             if event.type == USEREVENT:
-                level += 1
+                level_value += 1
                 num_of_enemies += 1
                 for i in range(num_of_enemies):
-                    enemyImg.append(pygame.transform.scale(pygame.image.load('img/enemy.png'), (80, 64)))
+                    enemy_body.append(ENEMY_IMG)
                     enemyX.append(random.randint(0, 735))
                     enemyY.append(random.randint(50, 150))
-                    enemyX_change.append(random.randint(1, 4))  # Horizontal velocity change
+                    enemyX_change.append(random.randint(1, 4))
                     enemyY_change.append(40)
-                spawn_sound = mixer.Sound('sounds/SpawnSound.ogg')
-                spawn_sound.play()
+               ## spawn_sound = mixer.Sound('sounds/SpawnSound.ogg')
+               ## spawn_sound.play()
             # Bonus event
             if event.type == USEREVENT + 1:
-                screen.blit(font.render("Press CTRL to bonus", True, (5, 5, 5)), (10, 550))
+                SCREEN.blit(GAME_FONT.render("Press CTRL to bonus", True, (5, 5, 5)), (10, 550))
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_LCTRL:
-                        screen.blit(background, (0, 0))
+                        SCREEN.blit(BACKGROUND_IMG, (0, 0))
 
             if event.type == pygame.KEYDOWN:  # Verifies if key has been pressed
                 if event.key == pygame.K_LEFT:
@@ -198,12 +208,12 @@ def main():
                 if event.key == pygame.K_RIGHT:
                     playerX_change = 4.5
                 if event.key == pygame.K_SPACE:
-                    bullet_sound = mixer.Sound('sounds/bullet.ogg')
+                    ##bullet_sound = mixer.Sound('sounds/bullet.ogg')
                     if bullet_state == "ready":
                         bulletX = playerX
                         bullet_state = "fire"
                         fire_bullet(bulletX, bulletY)
-                        bullet_sound.play()
+                        ##bullet_sound.play()
                 if event.key == pygame.K_p:
                     pause()
             if event.type == pygame.KEYUP:
@@ -212,16 +222,13 @@ def main():
                 if event.key == pygame.K_RIGHT:
                     playerX_change = 0
 
-        # Pintar a tela com RGB
-        screen.fill((255, 255, 255))
-
         # Imagem do background
-        screen.blit(background, (0, 0))
+        SCREEN.blit(BACKGROUND_IMG, (0, 0))
 
         # Atribuir valor de posição mudado pra coordenada X
         playerX += playerX_change
 
-        # Makes player not escape screen
+        # Makes player not escape SCREEN
         if playerX <= 0:
             playerX = 0
         elif playerX >= 736:  # 800 - 64, that refers to the sprite size
@@ -235,15 +242,17 @@ def main():
                 life -= 1
                 # add live lost sound here
                 if life > 0:
-                    lifelost_sound = mixer.Sound('sounds/LifeLost.wav')
-                    lifelost_sound.play()
+                    ##lifelost_sound = mixer.Sound('sounds/LifeLost.wav')
+                    ##lifelost_sound.play()
+                    pass
                 if life <= 0:
-                    gameover_sound = mixer.Sound('sounds/GameOver.wav')
+                    ##gameover_sound = mixer.Sound('sounds/GameOver.wav')
                     if GameOverSound_state:
-                        gameover_sound.play()
+                        ##gameover_sound.play()
+                        pass
                     GameOverSound_state = False
                     for j in range(num_of_enemies):
-                        enemyY[j] = 2000  # Enemies get out of screen
+                        enemyY[j] = 2000  # Enemies get out of SCREEN
                     game_over_text()
                     life = 0
                     break
@@ -268,8 +277,8 @@ def main():
             if collision:
                 # Selects a random audio file from three choices and play it when collision happens
                 reaction_random = "sounds/Reaction" + str(random.randint(1, 5)) + ".wav"
-                reaction_sound = mixer.Sound(reaction_random)
-                reaction_sound.play()
+              ##  reaction_sound = mixer.Sound(reaction_random)
+              ##  reaction_sound.play()
                 # reset bullet and enemy
                 bulletY = 480
                 bullet_state = "ready"
@@ -292,13 +301,31 @@ def main():
         # Iniciar o player com as posições iniciais, função definida lá em cima
         player(playerX, playerY)
 
-        # Show score, life and level functions
-        show_score(10, 10)
-        show_life(670, 10)
-        show_level(335, 10)
+def main_menu():
+    while True:
+        SCREEN.blit(BACKGROUND_IMG, (0, 0))
+        mx, my = pygame.mouse.get_pos()
 
-        # Tem que atualizar a tela no loop se não vai ficar a mesma coisa
+        button_1 = pygame.Rect(250, 250, 200, 50)
+        if button_1.collidepoint((mx, my)):
+            if click:
+                game()
+        pygame.draw.rect(SCREEN, (255, 255, 255), button_1)
+        click = False
+        for event in pygame.event.get():
+            if event.type == QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == KEYDOWN:
+                if event.key == K_ESCAPE:
+                    pygame.quit()
+                    sys.exit()
+            if event.type == MOUSEBUTTONDOWN:
+                if event.button == 1:
+                    click = True
+
+        clock.tick(60)
         pygame.display.update()
 
-
-main()
+main_menu()
+"""-- Game Loop --"""
