@@ -21,8 +21,12 @@ BULLET_IMG = pygame.image.load(os.path.join("img", "flame.gif"))
 # Appropriate image transformations
 BULLET_IMG = pygame.transform.scale(BULLET_IMG, (32, 32))
 BULLET_IMG = pygame.transform.flip(BULLET_IMG, 0, 1)
-ENEMY_IMG = pygame.transform.scale(ENEMY_IMG, (80, 64))
+ENEMY_IMG = pygame.transform.scale(ENEMY_IMG, (74, 64))
 BACKGROUND_IMG = pygame.transform.scale(BACKGROUND_IMG, (WIDTH, HEIGHT))
+
+# Load Font
+GAME_FONT = pygame.font.SysFont(("8BitMadness.ttf"), 42)
+GAMEOVER_FONT = pygame.font.SysFont('8BitMadness.ttf', 90)
 
 # Background and sound
 ##mixer.music.load('sounds/background.ogg')
@@ -51,8 +55,7 @@ def pause():
         for event in pygame.event.get():
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_p:
-                    # add pause song
-                   ## pause_sound.play()
+                    # pause_sound.play()
                     paused = False
             if event.type == pygame.QUIT:
                 pygame.quit()
@@ -63,7 +66,7 @@ def pause():
         clock.tick(5)
 
 """"
-def game_over_text():
+def gameover_text():
     pygame.mixer.music.pause()
     gameover = True
     # GameOver text
@@ -98,10 +101,32 @@ def is_collision(enemyX, enemyY, bulletX, bulletY):
         return False
 """
 
-class Character:
-    def __init__(self, x, y):
+
+class Bullet:
+    def __init__(self, x, y, img):
         self.x = x
         self.y = y
+        self.img = img
+        self.mask = pygame.mask.from_surface(self.img)
+
+    def draw(self, window):
+        window.blit(self.img, (self.x, self.y))
+
+    def move(self, vel):
+        self.y += vel
+
+    def off_screen(self, height):
+        return not(self.y <= height and self.y >= 0)
+
+    def collision(self, obj):
+        return collide(self, obj)
+
+
+class Character:
+    def __init__(self, x, y, health=100):
+        self.x = x
+        self.y = y
+        self.health = health
         self.character_img = None
         self.cool_down_counter = 0
 
@@ -111,15 +136,62 @@ class Character:
     def get_width(self):
         return self.character_img.get_width()
 
+    def get_height(self):
+        return self.character_img.get_height()
+
 
 class Player(Character):
-    def __init__(self, x, y):
+    COOLDOWN = 30
+
+    def __init__(self, x, y, health=100):
         super().__init__(x, y)
         self.character_img = PLAYER_IMG
+        self.bullet_img = BULLET_IMG
+        self.bullets = []
         self.mask = pygame.mask.from_surface(self.character_img)
+        self.max_health = health
+
+    def move_bullets(self, vel, enemies):
+        self.cooldown(SCREEN)
+        for bullet in self.bullets:
+            bullet.move(vel)
+            if bullet.off_screen(HEIGHT):
+                self.bullets.remove(bullet)
+            else:
+                for enemy in enemies:
+                    if bullet.collision(enemy):
+                        enemies.remove(enemy)
+                        if bullet in self.bullets:
+                            self.bullets.remove(bullet)
+
+
+    def cooldown(self, window):
+        """
+        Makes sure there's delay before player can shoot again
+        """
+        if self.cool_down_counter >= self.COOLDOWN:
+            self.cool_down_counter = 0
+        elif self.cool_down_counter > 0:
+            self.cool_down_counter += 1
+
+    def shoot(self):
+        if self.cool_down_counter == 0:
+            bullet = Bullet(self.x+10, self.y, self.bullet_img)
+            self.bullets.append(bullet)
+            self.cool_down_counter = 1
 
     def draw(self, window):
         super().draw(window)
+        self.healthbar(window)
+        for bullet in self.bullets:
+            bullet.draw(window)
+
+    def healthbar(self, window):
+        """
+        Creates a green and red bar that shows HP under the player
+        """
+        pygame.draw.rect(window, (255, 0, 0), (self.x, self.y + self.character_img.get_height() + 10, self.character_img.get_width(), 10))
+        pygame.draw.rect(window, (0, 255, 0), (self.x, self.y + self.character_img.get_height() + 10, self.character_img.get_width() * (self.health / self.max_health), 10))
 
 class Enemy(Character):
     def __init__(self, x, y):
@@ -130,89 +202,93 @@ class Enemy(Character):
     def move(self, vel):
         self.y += vel
 
+def collide(obj1, obj2):
+    offset_x = obj2.x - obj1.x
+    offset_y = obj2.y - obj1.y
+    return obj1.mask.overlap(obj2.mask, (offset_x, offset_y)) != None
+
 def game():
     """""-- Variables --"""
-    # GLOBAL VARIABLES
-    global enemy_body
-    global bullet_state
-    global level_value
-    global score_value
-    global life_value
-    global GAME_FONT
-
-    GAME_FONT = pygame.font.SysFont(("8BitMadness.ttf"), 42)
-
     running = True
     FPS = 100
-    # Bullet
-    bulletX = 0
-    bulletY = 480
-    bulletY_change = 7
-    bullet_state = "ready"
+    gameover = False
 
-    # Score and levelscore_value
     level_value = 1
     score_value = 0
+    life_value = 3
 
     # Jogador
     player = Player(370, 480)
-    life_value = 3
-    player_vel = 4.5
-    """"
-    # Inimigo
-    enemy_body = []
-    enemyX = []
-    enemyY = []
-    enemyX_change = []
-    enemyY_change = []
+    player_vel = 5
+    bullet_vel = -5
+
+    enemies = []
     num_of_enemies = 1
-    
-    
-    for i in range(num_of_enemies):
-        enemy_body.append(ENEMY_IMG)
-        enemyX.append(random.randint(0, 735))
-        enemyY.append(random.randint(50, 150))
-        # Attributes a random horizontal velocity to enemy
-        enemyX_change.append(random.randint(1, 4))
-        enemyY_change.append(40)
-    """
+    enemy_vel = 2
+    enemy = Enemy(random.randrange(50, WIDTH - 100), random.randrange(-1500, -100))
+    enemies.append(enemy)
 
     # Init Gameover sound state
     ##GameOverSound_state = True
 
     def redraw_window():
+        # Draw background
         SCREEN.blit(BACKGROUND_IMG, (0, 0))
-        player.draw(SCREEN)
+
+        # Render text
         score_text = GAME_FONT.render(f"Score: {score_value}", 1, (0, 0, 0))
         life_text = GAME_FONT.render(f"Life: {life_value}", 1, (0, 0, 0))
         level_text = GAME_FONT.render(f"Level: {level_value}", 1, (0, 0, 0))
+
+        # Put rendered text onto screen
         SCREEN.blit(score_text, (10, 10))
         SCREEN.blit(life_text, (WIDTH - level_text.get_width() + 10, 10))
         SCREEN.blit(level_text, ((WIDTH - level_text.get_width())//2, 10))
+
+        # Draw enemies
+        for enemy in enemies:
+            enemy.draw(SCREEN)
+
+        # Draw player
+        player.draw(SCREEN)
+
+        if gameover:
+            gameover_text = GAMEOVER_FONT.render("GAME OVER", 1, (0, 0, 0))
+            SCREEN.blit(gameover_text, (WIDTH/2 - gameover_text.get_width()/2, HEIGHT/2 - gameover_text.get_height()/2))
+
+
+        # Display changes
         pygame.display.update()
+
 
     # Game Loop
     while running:
         clock.tick(FPS)
         redraw_window()
 
+        if life_value <= 0 or player.health <= 0:
+            gameover = True
+            running = False
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
                 quit()
-            """""
+
+
             # Spawn diego after 10 seconds
             if event.type == USEREVENT:
+                ## spawn_sound = mixer.Sound('sounds/SpawnSound.ogg')
+                ## spawn_sound.play()
                 level_value += 1
                 num_of_enemies += 1
                 for i in range(num_of_enemies):
-                    enemy_body.append(ENEMY_IMG)
-                    enemyX.append(random.randint(0, 735))
-                    enemyY.append(random.randint(50, 150))
-                    enemyX_change.append(random.randint(1, 4))
-                    enemyY_change.append(40)
-               ## spawn_sound = mixer.Sound('sounds/SpawnSound.ogg')
-               ## spawn_sound.play()
+                    # Since enemies have the same vel, spawn them off screen to create different Y positions
+                    enemy = Enemy(random.randrange(50, WIDTH-100), random.randrange(-1500, -100))
+                    enemies.append(enemy)
+
+
+            """"
             # Bonus event
             if event.type == USEREVENT + 1:
                 SCREEN.blit(GAME_FONT.render("Press CTRL to bonus", True, (5, 5, 5)), (10, 550))
@@ -231,77 +307,25 @@ def game():
         keys = pygame.key.get_pressed()
         if keys[pygame.K_LEFT] and player.x - player_vel > 0:
             player.x -= player_vel
-            print(player.x)
         if keys[pygame.K_RIGHT] and player.x + player_vel + player.get_width() < WIDTH:
             player.x += player_vel
-            print(player.x)
+        if keys[pygame.K_SPACE]:
+            player.shoot()
         if keys[pygame.K_p]:
             pause()
 
-        """"
-        # Movimento do inimigo com bate e volta nas laterais
-        for i in range(num_of_enemies):
-            # Game Over
-            if enemyY[i] > 440:
-                life -= 1
-                # add live lost sound here
-                if life > 0:
-                    ##lifelost_sound = mixer.Sound('sounds/LifeLost.wav')
-                    ##lifelost_sound.play()
-                    pass
-                if life <= 0:
-                    ##gameover_sound = mixer.Sound('sounds/GameOver.wav')
-                    if GameOverSound_state:
-                        ##gameover_sound.play()
-                        pass
-                    GameOverSound_state = False
-                    for j in range(num_of_enemies):
-                        enemyY[j] = 2000  # Enemies get out of SCREEN
-                    game_over_text()
-                    life = 0
-                    break
-                else:
-                    # reset all enemies position
-                    for x in range(num_of_enemies):
-                        enemyX[x] = random.randint(0, 735)
-                        enemyY[x] = random.randint(50, 150)
-                        enemyX_change[x] = random.randint(1, 4)  # velocidade de mudança horizontal
-                        enemyY_change[x] = 40
+        for enemy in enemies[:]:
+            enemy.move(enemy_vel)
 
-            enemyX[i] += enemyX_change[i]
-            if enemyX[i] <= 0:
-                enemyX_change[i] = random.randint(1, 3)
-                enemyY[i] += enemyY_change[i]  # adiciona pixels toda vez q colide
-            elif enemyX[i] >= 736:  # 800 - 64, that refers to the sprite size
-                enemyX_change[i] = -random.randint(1, 3)
-                enemyY[i] += enemyY_change[i]  # adiciona pixels toda vez q colide
+            if collide(enemy, player):
+                player.health -= 10
+                enemies.remove(enemy)
+            elif enemy.y + enemy.get_height() > HEIGHT:
+                life_value -= 1
+                enemies.remove(enemy)
 
-                # Colisão
-            collision = is_collision(enemyX[i], enemyY[i], bulletX, bulletY)
-            if collision:
-                # Selects a random audio file from three choices and play it when collision happens
-                reaction_random = "sounds/Reaction" + str(random.randint(1, 5)) + ".wav"
-              ##  reaction_sound = mixer.Sound(reaction_random)
-              ##  reaction_sound.play()
-                # reset bullet and enemy
-                bulletY = 480
-                bullet_state = "ready"
-                score_value += 1
-                enemyX[i] = random.randint(0, 735)
-                enemyY[i] = random.randint(50, 150)
+        player.move_bullets(bullet_vel, enemies)
 
-            # Iniciar inimigo
-            enemy(enemyX[i], enemyY[i], i)
-
-        # Movimento da bala
-        if bulletY <= 0:
-            bulletY = 480
-            bullet_state = "ready"
-
-        if bullet_state == "fire":
-            fire_bullet(bulletX, bulletY)
-            bulletY -= bulletY_change
-        """
 def main_menu():
     while True:
         SCREEN.blit(BACKGROUND_IMG, (0, 0))
@@ -328,5 +352,5 @@ def main_menu():
         clock.tick(60)
         pygame.display.update()
 
-game()
+main_menu()
 """-- Game Loop --"""
