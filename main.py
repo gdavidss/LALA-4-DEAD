@@ -7,6 +7,7 @@ from pygame.locals import *
 
 # Initialize pygame, sound mixer, screen and font
 pygame.init()
+pygame.mixer.init()
 WIDTH, HEIGHT = 800, 600
 SCREEN = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("LALA Invaders")
@@ -95,10 +96,16 @@ class Player(Character):
         self.health = health
         self.bullet_img = BULLET_IMG
         self.bullets = []
-        self.fire_state = False
         self.score_value = 0
         self.mask = pygame.mask.from_surface(self.character_img)
         self.max_health = health
+        self.fire_x = self.x + 32
+        self.fire_y = -self.y + 400
+
+        # Fire bonus
+        self.fire_state = False
+        self.fire_image = pygame.transform.scale(PLAYER_IMG, (32, HEIGHT))
+        self.fire_mask = pygame.mask.from_surface(self.fire_image)
 
     def move_bullets(self, vel, enemies):
         self.cooldown(SCREEN)
@@ -133,7 +140,7 @@ class Player(Character):
             self.bullets.append(bullet)
             self.cool_down_counter = 1
 
-    def draw(self, window, enemies):
+    def draw(self, window):
         super().draw(window)
         self.healthbar(window)
         for bullet in self.bullets:
@@ -146,19 +153,16 @@ class Player(Character):
         pygame.draw.rect(window, (255, 0, 0), (self.x, self.y + self.character_img.get_height() + 10, self.character_img.get_width(), 10))
         pygame.draw.rect(window, (0, 255, 0), (self.x, self.y + self.character_img.get_height() + 10, self.character_img.get_width() * (self.health / self.max_health), 10))
 
-    def fire_special_draw(self, window, enemies):
-        #pygame.draw.rect(window, (255, 0, 0), (self.x+10, -self.y + 400, 32, HEIGHT))
-        self.fire_image = pygame.transform.scale(PLAYER_IMG, (32, HEIGHT))
-        self.fire_mask = pygame.mask.from_surface(self.fire_image)
-        window.blit(self.fire_image, (self.x+10, -self.y + 400))
-        for enemy in enemies:
-            if self.firecollide(self.fire_mask, enemy):
-                enemies.remove(enemy)
-                self.score_value += 1
+    def fire_special_draw(self, window):
+        self.fire_x = self.x + 10
+        window.blit(self.fire_image, (self.fire_x, self.fire_y))
 
-    def firecollide(self, fire_mask, enemies):
-        offset_x = enemies.x - self.x
-        return fire_mask.overlap_area(enemies.mask, (enemies.x - self.x),) != None
+
+    def firecollide(self, enemy):
+        #fire_image_rect = self.fire_image.get_rect()
+        offset_x = enemy.x - self.fire_x
+        offset_y = enemy.y - self.fire_y
+        return self.fire_mask.overlap(enemy.mask, (offset_x, offset_y)) != None
 
 
 class Enemy(Character):
@@ -224,10 +228,10 @@ def game():
 
         # Draw Fire bonus
         if player.fire_state:
-            player.fire_special_draw(SCREEN, enemies)
+            player.fire_special_draw(SCREEN)
 
         # Draw player
-        player.draw(SCREEN, enemies)
+        player.draw(SCREEN)
 
         # Render text
         score_text = GAME_FONT.render(f"Score: {player.score_value}", 1, (0, 0, 0))
@@ -298,9 +302,13 @@ def game():
         if keys[pygame.K_LEFT] and player.x - player_vel > 0:
             player.x -= player_vel
             player.character_img = pygame.transform.flip(PLAYER_IMG, 0, 0)
+            if player.fire_state:
+                player.fire_x -= player_vel
         if keys[pygame.K_RIGHT] and player.x + player_vel + player.get_width() < WIDTH:
             player.character_img = pygame.transform.flip(PLAYER_IMG, 1, 0)
             player.x += player_vel
+            if player.fire_state:
+                player.fire_x += player_vel
         if keys[pygame.K_p]:
             pause()
 
@@ -340,6 +348,10 @@ def game():
             if collide(enemy, player) or enemy.y + enemy.get_height() > HEIGHT:
                 player.health -= 10
                 enemies.remove(enemy)
+
+            if player.firecollide(enemy):
+                    enemies.remove(enemy)
+                    player.score_value += 1
 
         player.move_bullets(bullet_vel, enemies)
 
