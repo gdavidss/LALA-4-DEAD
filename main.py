@@ -41,9 +41,11 @@ GAMEOVER_SOUND = mixer.Sound('sounds/GameOver.wav')
 # Clock helps to limit fps
 clock = pygame.time.Clock()
 
-# Set a timer for every minute to unlock bonus
-pygame.time.set_timer(USEREVENT + 1, 5000)
-
+"""-- Collision Function --"""
+def collide(obj1, obj2):
+    offset_x = obj2.x - obj1.x
+    offset_y = obj2.y - obj1.y
+    return obj1.mask.overlap(obj2.mask, (offset_x, offset_y)) != None
 
 """""-- Classes --"""
 
@@ -63,7 +65,7 @@ class Bullet:
     def off_screen(self, height):
         return not(self.y <= height and self.y >= 0)
 
-    def collision(self, obj):
+    def bullet_collision(self, obj):
         return collide(self, obj)
 
 
@@ -85,7 +87,7 @@ class Character:
 
 
 class Player(Character):
-    COOLDOWN = 30
+    COOLDOWN = 20
 
     def __init__(self, x, y, health=100):
         super().__init__(x, y)
@@ -93,6 +95,7 @@ class Player(Character):
         self.health = health
         self.bullet_img = BULLET_IMG
         self.bullets = []
+        self.fire_state = False
         self.score_value = 0
         self.mask = pygame.mask.from_surface(self.character_img)
         self.max_health = health
@@ -105,12 +108,11 @@ class Player(Character):
                 self.bullets.remove(bullet)
             else:
                 for enemy in enemies:
-                    if bullet.collision(enemy):
+                    if bullet.bullet_collision(enemy):
                         enemies.remove(enemy)
                         self.score_value += 1
                         if bullet in self.bullets:
                             self.bullets.remove(bullet)
-
 
     def cooldown(self, window):
         """
@@ -125,13 +127,13 @@ class Player(Character):
         """
         Checks if cooldown is zero to allow bullet to be shot
         """
-        if self.cool_down_counter == 0:
+        if self.cool_down_counter == 0 and self.fire_state == False:
             BULLET_SOUND.play()
             bullet = Bullet(self.x+10, self.y, self.bullet_img)
             self.bullets.append(bullet)
             self.cool_down_counter = 1
 
-    def draw(self, window):
+    def draw(self, window, enemies):
         super().draw(window)
         self.healthbar(window)
         for bullet in self.bullets:
@@ -144,6 +146,21 @@ class Player(Character):
         pygame.draw.rect(window, (255, 0, 0), (self.x, self.y + self.character_img.get_height() + 10, self.character_img.get_width(), 10))
         pygame.draw.rect(window, (0, 255, 0), (self.x, self.y + self.character_img.get_height() + 10, self.character_img.get_width() * (self.health / self.max_health), 10))
 
+    def fire_special_draw(self, window, enemies):
+        #pygame.draw.rect(window, (255, 0, 0), (self.x+10, -self.y + 400, 32, HEIGHT))
+        self.fire_image = pygame.transform.scale(PLAYER_IMG, (32, HEIGHT))
+        self.fire_mask = pygame.mask.from_surface(self.fire_image)
+        window.blit(self.fire_image, (self.x+10, -self.y + 400))
+        for enemy in enemies:
+            if self.firecollide(self.fire_mask, enemy):
+                enemies.remove(enemy)
+                self.score_value += 1
+
+    def firecollide(self, fire_mask, enemies):
+        offset_x = enemies.x - self.x
+        return fire_mask.overlap_area(enemies.mask, (enemies.x - self.x),) != None
+
+
 class Enemy(Character):
     def __init__(self, x, y):
         super().__init__(x, y)
@@ -153,12 +170,11 @@ class Enemy(Character):
     def move(self, vel):
         self.y += vel
 
-
-class Bonus():
+class HealthBonus():
     def __init__(self, x, y):
         self.x = x
         self.y = y
-        self.bonusType()
+        self.bonustype()
         self.mask = pygame.mask.from_surface(self.bonus_img)
 
     def draw(self, window):
@@ -167,19 +183,13 @@ class Bonus():
     def move(self, vel):
         self.y += vel
 
-    def bonusType(self):
+    def bonustype(self):
         if random.randint(1,10) > 8:
             self.bonus_img = BULLET_IMG
             self.health = 100
         else:
             self.bonus_img = PLAYER_IMG
-            self.health = 10
-
-def collide(obj1, obj2):
-    offset_x = obj2.x - obj1.x
-    offset_y = obj2.y - obj1.y
-    return obj1.mask.overlap(obj2.mask, (offset_x, offset_y)) != None
-
+            self.health = 20
 
 def game():
     """""-- Variables --"""
@@ -204,16 +214,6 @@ def game():
         # Draw background
         SCREEN.blit(BACKGROUND_IMG, (0, 0))
 
-        # Render text
-        score_text = GAME_FONT.render(f"Score: {player.score_value}", 1, (0, 0, 0))
-        life_text = GAME_FONT.render(f"HP: {player.health}", 1, (0, 0, 0))
-        level_text = GAME_FONT.render(f"Wave: {wave_value}", 1, (0, 0, 0))
-
-        # Put rendered text on screen
-        SCREEN.blit(score_text, (10, 10))
-        SCREEN.blit(life_text, (WIDTH - level_text.get_width(), 10))
-        SCREEN.blit(level_text, ((WIDTH - level_text.get_width())//2, 10))
-
         # Draw enemies
         for enemy in enemies:
             enemy.draw(SCREEN)
@@ -222,8 +222,22 @@ def game():
         for bonus in bonuses:
             bonus.draw(SCREEN)
 
+        # Draw Fire bonus
+        if player.fire_state:
+            player.fire_special_draw(SCREEN, enemies)
+
         # Draw player
-        player.draw(SCREEN)
+        player.draw(SCREEN, enemies)
+
+        # Render text
+        score_text = GAME_FONT.render(f"Score: {player.score_value}", 1, (0, 0, 0))
+        life_text = GAME_FONT.render(f"HP: {player.health}", 1, (0, 0, 0))
+        level_text = GAME_FONT.render(f"Wave: {wave_value}", 1, (0, 0, 0))
+
+        # Put rendered text on screen
+        SCREEN.blit(score_text, (10, 10))
+        SCREEN.blit(life_text, (WIDTH - level_text.get_width(), 10))
+        SCREEN.blit(level_text, ((WIDTH - level_text.get_width()) // 2, 10))
 
         if gameover:
             GAMEOVER_SOUND.play()
@@ -253,6 +267,9 @@ def game():
             pygame.display.update()
             clock.tick(5)
 
+    # Timer that unlocks fire ray every minute
+    pygame.time.set_timer(USEREVENT, 5000)
+
     # Game Loop
     while running:
         clock.tick(FPS)
@@ -269,6 +286,12 @@ def game():
             if event.type == KEYDOWN:
                 if event.key == K_SPACE:
                     player.shoot()
+            # Unlocks fire after one minute
+            if event.type == USEREVENT:
+                player.fire_state = True
+                pygame.time.set_timer(USEREVENT + 1, 4000)
+            if event.type == USEREVENT+1:
+                player.fire_state = False
 
         # Movement dynamics that allow two keys to be pressed simultaneously
         keys = pygame.key.get_pressed()
@@ -291,8 +314,8 @@ def game():
                 enemies.append(enemy)
             SPAWN_SOUND.play()
             # Spawn random bonus every 4 levels
-            if wave_value % 4 == 0:
-                bonus = Bonus(random.randrange(50, WIDTH - 100), random.randrange(-1500, -100))
+            if wave_value % 3 == 0:
+                bonus = HealthBonus(random.randrange(50, WIDTH - 100), random.randrange(-1500, -100))
                 bonuses.append(bonus)
 
         for bonus in bonuses[:]:
@@ -304,6 +327,11 @@ def game():
                 else:
                     player.health += bonus.health
                 bonuses.remove(bonus)
+
+            if bonus.y > HEIGHT:
+                bonuses.remove(bonus)
+                print("deletado")
+
 
         for enemy in enemies[:]:
             enemy.move(enemy_vel)
