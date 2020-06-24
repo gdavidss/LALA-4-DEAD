@@ -10,35 +10,31 @@ pygame.init()
 pygame.mixer.init()
 WIDTH, HEIGHT = 800, 600
 SCREEN = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("LALA Invaders")
+pygame.display.set_caption("LALA 4 DEAD")
 
 # Load images
 MENUBG_IMG = pygame.image.load(os.path.join("img", "menu_bg.png"))
 GAMEOVER_BG = pygame.image.load(os.path.join("img", "gameover_bg.png"))
-PLAYAGAIN_IMG = pygame.image.load(os.path.join("img", "gm_playagain.png"))
-PLAYAGAIN_HOVER = pygame.image.load(os.path.join("img", "gm_playagain_hover.png"))
-MAINMENU_IMG = pygame.image.load(os.path.join("img", "gm_mainmenu.png"))
-MAINMENU_HOVER = pygame.image.load(os.path.join("img", "gm_mainmenu_hover.png"))
-START_IMG = pygame.image.load(os.path.join("img", "start.png"))
-START_HOVER = pygame.image.load(os.path.join("img", "start_hover.png"))
-ABOUT_IMG = pygame.image.load(os.path.join("img", "about.png"))
-ABOUT_HOVER = pygame.image.load(os.path.join("img", "about_hover.png"))
+PLAYAGAIN_IMG = [pygame.image.load(os.path.join("img", "gm_playagain.png")), pygame.image.load(os.path.join("img", "gm_playagain_hover.png"))]
+MAINMENU_IMG = [pygame.image.load(os.path.join("img", "gm_mainmenu.png")), pygame.image.load(os.path.join("img", "gm_mainmenu_hover.png"))]
+START_IMG = [pygame.image.load(os.path.join("img", "start.png")), pygame.image.load(os.path.join("img", "start_hover.png"))]
+ABOUT_IMG = [pygame.image.load(os.path.join("img", "about.png")), pygame.image.load(os.path.join("img", "about_hover.png"))]
 BACKGROUND_IMG = pygame.image.load(os.path.join("img", "background.png"))
 GAMEBAR_IMG = pygame.image.load(os.path.join("img", "game_bar.png"))
 PLAYER_IMG = pygame.image.load(os.path.join("img", "player.png"))
-BULLET_IMG = pygame.image.load(os.path.join("img", "flame.gif"))
-ENEMY1_IMG = pygame.image.load(os.path.join("img", "enemy.png"))
-ENEMY2_IMG = pygame.image.load(os.path.join("img", "enemy2.png"))
-ENEMY3_IMG = pygame.image.load(os.path.join("img", "enemy3.png"))
-ENEMY4_IMG = pygame.image.load(os.path.join("img", "enemy4.png"))
+HEALTHBONUS_IMG = [pygame.image.load(os.path.join("img", "healthbonus1.png")), pygame.image.load(os.path.join("img", "healthbonus2.png"))]
+BULLET_IMG = [pygame.image.load(os.path.join("img", "bullet_0.png")), pygame.image.load(os.path.join("img", "bullet_1.png"))]
+ENEMY_IMG = [pygame.image.load(os.path.join("img", "enemy.png")), pygame.image.load(os.path.join("img", "enemy2.png")), pygame.image.load(os.path.join("img", "enemy3.png")), pygame.image.load(os.path.join("img", "enemy4.png"))]
 
 # Appropriate image transformations
-BULLET_IMG = pygame.transform.scale(BULLET_IMG, (32, 32))
-BULLET_IMG = pygame.transform.flip(BULLET_IMG, 0, 1)
-ENEMY1_IMG = pygame.transform.scale(ENEMY1_IMG, (74, 64))
-ENEMY2_IMG = pygame.transform.scale(ENEMY2_IMG, (74, 64))
-ENEMY3_IMG = pygame.transform.scale(ENEMY3_IMG, (74, 64))
-ENEMY4_IMG = pygame.transform.scale(ENEMY4_IMG, (74, 64))
+BULLET_IMG[0] = pygame.transform.scale(BULLET_IMG[0], (32, 32))
+BULLET_IMG[1] = pygame.transform.scale(BULLET_IMG[1], (32, 32))
+ENEMY_IMG[0] = pygame.transform.scale(ENEMY_IMG[0], (84, 70))
+ENEMY_IMG[1] = pygame.transform.scale(ENEMY_IMG[1], (74, 64))
+ENEMY_IMG[2] = pygame.transform.scale(ENEMY_IMG[2], (74, 64))
+ENEMY_IMG[3] = pygame.transform.scale(ENEMY_IMG[3], (74, 70))
+HEALTHBONUS_IMG[0] = pygame.transform.scale(HEALTHBONUS_IMG[0], (48, 48))
+HEALTHBONUS_IMG[1] = pygame.transform.scale(HEALTHBONUS_IMG[1], (32, 48))
 BACKGROUND_IMG = pygame.transform.scale(BACKGROUND_IMG, (WIDTH, HEIGHT))
 
 # Load Font
@@ -111,7 +107,7 @@ class Player(Character):
         super().__init__(x, y)
         self.character_img = PLAYER_IMG
         self.health = health
-        self.bullet_img = BULLET_IMG
+        self.bullet_img = BULLET_IMG[0]
         self.bullets = []
         self.score_value = 0
         self.mask = pygame.mask.from_surface(self.character_img)
@@ -195,7 +191,7 @@ class Player(Character):
 class Enemy(Character):
     def __init__(self, x, y):
         super().__init__(x, y)
-        self.character_img = random.choice([ENEMY1_IMG, ENEMY2_IMG, ENEMY3_IMG, ENEMY4_IMG])
+        self.character_img = random.choice([ENEMY_IMG[0], ENEMY_IMG[1], ENEMY_IMG[2], ENEMY_IMG[3]])
         self.mask = pygame.mask.from_surface(self.character_img)
 
     def move(self, vel):
@@ -215,12 +211,12 @@ class HealthBonus():
         self.y += vel
 
     def bonus_type(self):
-        # 30% chances of getting Llama (100HP) and 70% of 20HP
-        if random.randint(1,10) >= 7:
-            self.bonus_img = BULLET_IMG
+        # 20% chances of getting Llama (100HP) and 70% of 20HP
+        if random.randint(1,10) > 8:
+            self.bonus_img = HEALTHBONUS_IMG[1]
             self.health = 100
         else:
-            self.bonus_img = PLAYER_IMG
+            self.bonus_img = HEALTHBONUS_IMG[0]
             self.health = 20
 
 def game():
@@ -347,12 +343,12 @@ def game():
             num_of_enemies += 1
             for i in range(num_of_enemies):
                 # Since enemies have the same vel, spawn them off screen to create different Y positions
-                enemy = Enemy(random.randrange(50, WIDTH - 100), random.randrange(-1500, -100))
+                enemy = Enemy(random.randrange(100, WIDTH - 100), random.randrange(-1500, -100))
                 enemies.append(enemy)
             SPAWN_SOUND.play()
             # Spawn random bonus every 4 levels
             if wave_value % 3 == 0:
-                bonus = HealthBonus(random.randrange(50, WIDTH - 100), random.randrange(-1500, -100))
+                bonus = HealthBonus(random.randrange(100, WIDTH - 100), random.randrange(-1500, -100))
                 health_bonuses.append(bonus)
 
         # Health bonus
@@ -393,12 +389,12 @@ def game_over():
         SCREEN.blit(GAMEOVER_BG, (0, 0))
 
         # Draw buttons on screen
-        SCREEN.blit(PLAYAGAIN_IMG, (WIDTH / 2 - PLAYAGAIN_IMG.get_width() / 2, HEIGHT / 2 - START_IMG.get_height() / 2+16))
-        SCREEN.blit(MAINMENU_IMG, (WIDTH / 2 - MAINMENU_IMG.get_width() / 2, HEIGHT / 2 + 64))
+        SCREEN.blit(PLAYAGAIN_IMG[0], (WIDTH / 2 - PLAYAGAIN_IMG[0].get_width() / 2, HEIGHT / 2 - PLAYAGAIN_IMG[0].get_height() / 2+16))
+        SCREEN.blit(MAINMENU_IMG[0], (WIDTH / 2 - MAINMENU_IMG[0].get_width() / 2, HEIGHT / 2 + 64))
 
         # Creating invisble rectangular object on buttons to allow click
-        playagain_button = START_IMG.get_rect(x=WIDTH / 2 - START_IMG.get_width() / 2, y=HEIGHT / 2 - START_IMG.get_height() / 2+16)
-        mainmenu_button = ABOUT_IMG.get_rect(x=WIDTH / 2 - ABOUT_IMG.get_width() / 2, y=HEIGHT / 2 + 64)
+        playagain_button = PLAYAGAIN_IMG[0].get_rect(x=WIDTH / 2 - PLAYAGAIN_IMG[0].get_width() / 2, y=HEIGHT / 2 - PLAYAGAIN_IMG[0].get_height() / 2+16)
+        mainmenu_button = MAINMENU_IMG[0].get_rect(x=WIDTH / 2 - MAINMENU_IMG[0].get_width() / 2, y=HEIGHT / 2 + 64)
 
         for event in pygame.event.get():
             if event.type == QUIT:
@@ -410,12 +406,12 @@ def game_over():
 
         # Button hover and click dynamics
         if playagain_button.collidepoint((mx, my)):
-            SCREEN.blit(PLAYAGAIN_HOVER,(WIDTH / 2 - PLAYAGAIN_HOVER.get_width() / 2, HEIGHT / 2 - PLAYAGAIN_HOVER.get_height() / 2+16))
+            SCREEN.blit(PLAYAGAIN_IMG[1],(WIDTH / 2 - PLAYAGAIN_IMG[1].get_width() / 2, HEIGHT / 2 - PLAYAGAIN_IMG[1].get_height() / 2 + 16))
             if click:
                 GAMEOVER_SOUND.stop()
                 game()
         if mainmenu_button.collidepoint((mx, my)):
-            SCREEN.blit(MAINMENU_HOVER, (WIDTH / 2 - MAINMENU_HOVER.get_width() / 2, HEIGHT / 2 + 64))
+            SCREEN.blit(MAINMENU_IMG[1], (WIDTH / 2 - MAINMENU_IMG[1].get_width() / 2, HEIGHT / 2 + 64))
             if click:
                 GAMEOVER_SOUND.stop()
                 main_menu()
@@ -432,12 +428,12 @@ def main_menu():
         SCREEN.blit(MENUBG_IMG, (0, 0))
 
         # Draw buttons on screen
-        SCREEN.blit(START_IMG, (WIDTH / 2 - START_IMG.get_width() / 2, HEIGHT / 2 - START_IMG.get_height() / 2))
-        SCREEN.blit(ABOUT_IMG, (WIDTH / 2 - ABOUT_IMG.get_width() / 2, HEIGHT / 2 + 48))
+        SCREEN.blit(START_IMG[0], (WIDTH / 2 - START_IMG[0].get_width() / 2, HEIGHT / 2 - START_IMG[0].get_height() / 2))
+        SCREEN.blit(ABOUT_IMG[0], (WIDTH / 2 - ABOUT_IMG[0].get_width() / 2, HEIGHT / 2 + 48))
 
         # Creating invisble rectangular object on buttons to allow click
-        start_button = START_IMG.get_rect(x=WIDTH/2 - START_IMG.get_width()/2, y=HEIGHT/2 - START_IMG.get_height()/2)
-        about_button = ABOUT_IMG.get_rect(x=WIDTH/2 - ABOUT_IMG.get_width()/2, y=HEIGHT/2 + 48)
+        start_button = START_IMG[0].get_rect(x=WIDTH/2 - START_IMG[0].get_width()/2, y=HEIGHT/2 - START_IMG[0].get_height()/2)
+        about_button = ABOUT_IMG[0].get_rect(x=WIDTH/2 - ABOUT_IMG[0].get_width()/2, y=HEIGHT/2 + 48)
 
         for event in pygame.event.get():
             if event.type == QUIT:
@@ -449,11 +445,11 @@ def main_menu():
 
         # Button hover and click dynamics
         if start_button.collidepoint((mx, my)):
-            SCREEN.blit(START_HOVER, (WIDTH / 2 - START_HOVER.get_width() / 2, HEIGHT / 2 - START_HOVER.get_height() / 2))
+            SCREEN.blit(START_IMG[1], (WIDTH / 2 - START_IMG[1].get_width() / 2, HEIGHT / 2 - START_IMG[1].get_height() / 2))
             if click:
                 game()
         if about_button.collidepoint((mx, my)):
-            SCREEN.blit(ABOUT_HOVER, (WIDTH / 2 - ABOUT_HOVER.get_width() / 2, HEIGHT/2 + 48))
+            SCREEN.blit(ABOUT_IMG[1], (WIDTH / 2 - ABOUT_IMG[1].get_width() / 2, HEIGHT / 2 + 48))
             if click:
                 about()
 
@@ -480,7 +476,6 @@ def about():
 
         clock.tick(60)
         pygame.display.update()
-
 
 main_menu()
 """-- Game Loop --"""
