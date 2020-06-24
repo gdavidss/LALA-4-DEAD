@@ -13,7 +13,18 @@ SCREEN = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("LALA Invaders")
 
 # Load images
+MENUBG_IMG = pygame.image.load(os.path.join("img", "menu_bg.png"))
+GAMEOVER_BG = pygame.image.load(os.path.join("img", "gameover_bg.png"))
+PLAYAGAIN_IMG = pygame.image.load(os.path.join("img", "gm_playagain.png"))
+PLAYAGAIN_HOVER = pygame.image.load(os.path.join("img", "gm_playagain_hover.png"))
+MAINMENU_IMG = pygame.image.load(os.path.join("img", "gm_mainmenu.png"))
+MAINMENU_HOVER = pygame.image.load(os.path.join("img", "gm_mainmenu_hover.png"))
+START_IMG = pygame.image.load(os.path.join("img", "start.png"))
+START_HOVER = pygame.image.load(os.path.join("img", "start_hover.png"))
+ABOUT_IMG = pygame.image.load(os.path.join("img", "about.png"))
+ABOUT_HOVER = pygame.image.load(os.path.join("img", "about_hover.png"))
 BACKGROUND_IMG = pygame.image.load(os.path.join("img", "background.png"))
+GAMEBAR_IMG = pygame.image.load(os.path.join("img", "game_bar.png"))
 PLAYER_IMG = pygame.image.load(os.path.join("img", "player.png"))
 ENEMY_IMG = pygame.image.load(os.path.join("img", "enemy.png"))
 BULLET_IMG = pygame.image.load(os.path.join("img", "flame.gif"))
@@ -25,7 +36,7 @@ ENEMY_IMG = pygame.transform.scale(ENEMY_IMG, (74, 64))
 BACKGROUND_IMG = pygame.transform.scale(BACKGROUND_IMG, (WIDTH, HEIGHT))
 
 # Load Font
-GAME_FONT = pygame.font.SysFont(("8BitMadness.ttf"), 42)
+GAME_FONT = pygame.font.Font(("8BitMadness.ttf"), 42)
 GAMEOVER_FONT = pygame.font.SysFont('8BitMadness.ttf', 90)
 
 # Load Sounds
@@ -42,7 +53,7 @@ GAMEOVER_SOUND = mixer.Sound('sounds/GameOver.wav')
 # Clock helps to limit fps
 clock = pygame.time.Clock()
 
-"""-- Collision Function --"""
+"""-- Collide Function --"""
 def collide(obj1, obj2):
     offset_x = obj2.x - obj1.x
     offset_y = obj2.y - obj1.y
@@ -99,15 +110,18 @@ class Player(Character):
         self.score_value = 0
         self.mask = pygame.mask.from_surface(self.character_img)
         self.max_health = health
-        self.fire_x = self.x + 32
-        self.fire_y = -self.y + 400
 
-        # Fire bonus
-        self.fire_state = False
-        self.fire_image = pygame.transform.scale(PLAYER_IMG, (32, HEIGHT))
-        self.fire_mask = pygame.mask.from_surface(self.fire_image)
+        # Special fire bonus
+        self.specialfire_x = self.x + 10
+        self.specialfire_y = -self.y + 400
+        self.specialfire_state = False
+        self.specialfire_image = pygame.transform.scale(PLAYER_IMG, (32, HEIGHT))
+        self.specialfire_mask = pygame.mask.from_surface(self.specialfire_image)
 
     def move_bullets(self, vel, enemies):
+        """
+        Moves every bullet and checks collision with enemy
+        """
         self.cooldown(SCREEN)
         for bullet in self.bullets:
             bullet.move(vel)
@@ -134,35 +148,42 @@ class Player(Character):
         """
         Checks if cooldown is zero to allow bullet to be shot
         """
-        if self.cool_down_counter == 0 and self.fire_state == False:
+        if self.cool_down_counter == 0 and self.specialfire_state == False:
             BULLET_SOUND.play()
             bullet = Bullet(self.x+10, self.y, self.bullet_img)
             self.bullets.append(bullet)
             self.cool_down_counter = 1
 
     def draw(self, window):
+        """
+        Draw player (via super), health bar and bullets that are being shot
+        """
         super().draw(window)
-        self.healthbar(window)
+        self.health_bar(window)
         for bullet in self.bullets:
             bullet.draw(window)
 
-    def healthbar(self, window):
+    def health_bar(self, window):
         """
         Creates a green and red bar that shows HP under the player
         """
         pygame.draw.rect(window, (255, 0, 0), (self.x, self.y + self.character_img.get_height() + 10, self.character_img.get_width(), 10))
         pygame.draw.rect(window, (0, 255, 0), (self.x, self.y + self.character_img.get_height() + 10, self.character_img.get_width() * (self.health / self.max_health), 10))
 
-    def fire_special_draw(self, window):
-        self.fire_x = self.x + 10
-        window.blit(self.fire_image, (self.fire_x, self.fire_y))
+    def specialfire_draw(self, window):
+        """
+        Makes special fire follow the player and draws it on screen
+        """
+        self.specialfire_x = self.x + 10
+        window.blit(self.specialfire_image, (self.specialfire_x, self.specialfire_y))
 
-
-    def firecollide(self, enemy):
-        #fire_image_rect = self.fire_image.get_rect()
-        offset_x = enemy.x - self.fire_x
-        offset_y = enemy.y - self.fire_y
-        return self.fire_mask.overlap(enemy.mask, (offset_x, offset_y)) != None
+    def specialfire_collision(self, enemy):
+        """
+        Return if a collision between special fire and enemy has happened
+        """
+        offset_x = enemy.x - self.specialfire_x
+        offset_y = enemy.y - self.specialfire_y
+        return self.specialfire_mask.overlap(enemy.mask, (offset_x, offset_y)) != None
 
 
 class Enemy(Character):
@@ -178,7 +199,7 @@ class HealthBonus():
     def __init__(self, x, y):
         self.x = x
         self.y = y
-        self.bonustype()
+        self.bonus_type()
         self.mask = pygame.mask.from_surface(self.bonus_img)
 
     def draw(self, window):
@@ -187,7 +208,7 @@ class HealthBonus():
     def move(self, vel):
         self.y += vel
 
-    def bonustype(self):
+    def bonus_type(self):
         if random.randint(1,10) > 8:
             self.bonus_img = BULLET_IMG
             self.health = 100
@@ -196,7 +217,7 @@ class HealthBonus():
             self.health = 20
 
 def game():
-    """""-- Variables --"""
+    # VARIABLES
     running = True
     FPS = 60
     gameover = False
@@ -211,9 +232,11 @@ def game():
     num_of_enemies = 0
     enemy_vel = 2
 
-    bonuses = []
-    bonus_vel = 3
+    health_bonuses = []
+    hbonus_vel = 3
 
+
+    # REDRAW WINDOW
     def redraw_window():
         # Draw background
         SCREEN.blit(BACKGROUND_IMG, (0, 0))
@@ -223,15 +246,17 @@ def game():
             enemy.draw(SCREEN)
 
         # Draw Bonus
-        for bonus in bonuses:
+        for bonus in health_bonuses:
             bonus.draw(SCREEN)
 
-        # Draw Fire bonus
-        if player.fire_state:
-            player.fire_special_draw(SCREEN)
+        # Draw specialfire bonus if on
+        if player.specialfire_state:
+            player.specialfire_draw(SCREEN)
 
         # Draw player
         player.draw(SCREEN)
+
+        SCREEN.blit(GAMEBAR_IMG, (0, 0))
 
         # Render text
         score_text = GAME_FONT.render(f"Score: {player.score_value}", 1, (0, 0, 0))
@@ -244,9 +269,7 @@ def game():
         SCREEN.blit(level_text, ((WIDTH - level_text.get_width()) // 2, 10))
 
         if gameover:
-            GAMEOVER_SOUND.play()
-            gameover_text = GAMEOVER_FONT.render("GAME OVER", 1, (0, 0, 0))
-            SCREEN.blit(gameover_text, (WIDTH/2 - gameover_text.get_width()/2, HEIGHT/2 - gameover_text.get_height()/2))
+            game_over()
 
         # Display changes
         pygame.display.update()
@@ -271,17 +294,16 @@ def game():
             pygame.display.update()
             clock.tick(5)
 
-    # Timer that unlocks fire ray every minute
-    pygame.time.set_timer(USEREVENT, 5000)
+    # Timer that unlocks special fire every minute
+    pygame.time.set_timer(USEREVENT, 60000)
 
-    # Game Loop
+    # GAME LOOP
     while running:
         clock.tick(FPS)
         redraw_window()
 
         if player.health <= 0:
             gameover = True
-            running = False
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -290,25 +312,25 @@ def game():
             if event.type == KEYDOWN:
                 if event.key == K_SPACE:
                     player.shoot()
-            # Unlocks fire after one minute
+            # Unlocks specialfire after one minute
             if event.type == USEREVENT:
-                player.fire_state = True
+                player.specialfire_state = True
                 pygame.time.set_timer(USEREVENT + 1, 4000)
             if event.type == USEREVENT+1:
-                player.fire_state = False
+                player.specialfire_state = False
 
         # Movement dynamics that allow two keys to be pressed simultaneously
         keys = pygame.key.get_pressed()
         if keys[pygame.K_LEFT] and player.x - player_vel > 0:
             player.x -= player_vel
             player.character_img = pygame.transform.flip(PLAYER_IMG, 0, 0)
-            if player.fire_state:
-                player.fire_x -= player_vel
+            if player.specialfire_state:
+                player.specialfire_x -= player_vel
         if keys[pygame.K_RIGHT] and player.x + player_vel + player.get_width() < WIDTH:
             player.character_img = pygame.transform.flip(PLAYER_IMG, 1, 0)
             player.x += player_vel
-            if player.fire_state:
-                player.fire_x += player_vel
+            if player.specialfire_state:
+                player.specialfire_x += player_vel
         if keys[pygame.K_p]:
             pause()
 
@@ -324,22 +346,21 @@ def game():
             # Spawn random bonus every 4 levels
             if wave_value % 3 == 0:
                 bonus = HealthBonus(random.randrange(50, WIDTH - 100), random.randrange(-1500, -100))
-                bonuses.append(bonus)
+                health_bonuses.append(bonus)
 
-        for bonus in bonuses[:]:
-            bonus.move(bonus_vel)
+        # Health bonus
+        for health_bonus in health_bonuses[:]:
+            health_bonus.move(hbonus_vel)
 
             if collide(bonus, player):
                 if player.health + bonus.health > 100:
                     player.health = 100
                 else:
                     player.health += bonus.health
-                bonuses.remove(bonus)
+                health_bonuses.remove(bonus)
 
             if bonus.y > HEIGHT:
-                bonuses.remove(bonus)
-                print("deletado")
-
+                health_bonuses.remove(bonus)
 
         for enemy in enemies[:]:
             enemy.move(enemy_vel)
@@ -349,37 +370,110 @@ def game():
                 player.health -= 10
                 enemies.remove(enemy)
 
-            if player.firecollide(enemy):
-                    enemies.remove(enemy)
-                    player.score_value += 1
+            if player.specialfire_collision(enemy):
+                enemies.remove(enemy)
+                player.score_value += 1
 
         player.move_bullets(bullet_vel, enemies)
 
-def main_menu():
+def game_over():
+    GAMEOVER_SOUND.play()
     while True:
-        SCREEN.blit(BACKGROUND_IMG, (0, 0))
         mx, my = pygame.mouse.get_pos()
-
-        button_1 = pygame.Rect(250, 250, 200, 50)
-        if button_1.collidepoint((mx, my)):
-            if click:
-                game()
-        pygame.draw.rect(SCREEN, (255, 255, 255), button_1)
         click = False
+
+        # Draw main menu background
+        SCREEN.blit(GAMEOVER_BG, (0, 0))
+
+        # Draw buttons on screen
+        SCREEN.blit(PLAYAGAIN_IMG, (WIDTH / 2 - PLAYAGAIN_IMG.get_width() / 2, HEIGHT / 2 - START_IMG.get_height() / 2+16))
+        SCREEN.blit(MAINMENU_IMG, (WIDTH / 2 - MAINMENU_IMG.get_width() / 2, HEIGHT / 2 + 64))
+
+        # Creating invisble rectangular object on buttons to allow click
+        playagain_button = START_IMG.get_rect(x=WIDTH / 2 - START_IMG.get_width() / 2, y=HEIGHT / 2 - START_IMG.get_height() / 2+16)
+        mainmenu_button = ABOUT_IMG.get_rect(x=WIDTH / 2 - ABOUT_IMG.get_width() / 2, y=HEIGHT / 2 + 64)
+
         for event in pygame.event.get():
             if event.type == QUIT:
                 pygame.quit()
                 sys.exit()
-            if event.type == KEYDOWN:
-                if event.key == K_ESCAPE:
-                    pygame.quit()
-                    sys.exit()
             if event.type == MOUSEBUTTONDOWN:
                 if event.button == 1:
                     click = True
 
+        # Button hover and click dynamics
+        if playagain_button.collidepoint((mx, my)):
+            SCREEN.blit(PLAYAGAIN_HOVER,(WIDTH / 2 - PLAYAGAIN_HOVER.get_width() / 2, HEIGHT / 2 - PLAYAGAIN_HOVER.get_height() / 2+16))
+            if click:
+                GAMEOVER_SOUND.stop()
+                game()
+        if mainmenu_button.collidepoint((mx, my)):
+            SCREEN.blit(MAINMENU_HOVER, (WIDTH / 2 - MAINMENU_HOVER.get_width() / 2, HEIGHT / 2 + 64))
+            if click:
+                GAMEOVER_SOUND.stop()
+                main_menu()
+
         clock.tick(60)
         pygame.display.update()
 
-game()
+def main_menu():
+    while True:
+        mx, my = pygame.mouse.get_pos()
+        click = False
+
+        # Draw main menu background
+        SCREEN.blit(MENUBG_IMG, (0, 0))
+
+        # Draw buttons on screen
+        SCREEN.blit(START_IMG, (WIDTH / 2 - START_IMG.get_width() / 2, HEIGHT / 2 - START_IMG.get_height() / 2))
+        SCREEN.blit(ABOUT_IMG, (WIDTH / 2 - ABOUT_IMG.get_width() / 2, HEIGHT / 2 + 48))
+
+        # Creating invisble rectangular object on buttons to allow click
+        start_button = START_IMG.get_rect(x=WIDTH/2 - START_IMG.get_width()/2, y=HEIGHT/2 - START_IMG.get_height()/2)
+        about_button = ABOUT_IMG.get_rect(x=WIDTH/2 - ABOUT_IMG.get_width()/2, y=HEIGHT/2 + 48)
+
+        for event in pygame.event.get():
+            if event.type == QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == MOUSEBUTTONDOWN:
+                if event.button == 1:
+                    click = True
+
+        # Button hover and click dynamics
+        if start_button.collidepoint((mx, my)):
+            SCREEN.blit(START_HOVER, (WIDTH / 2 - START_HOVER.get_width() / 2, HEIGHT / 2 - START_HOVER.get_height() / 2))
+            if click:
+                game()
+        if about_button.collidepoint((mx, my)):
+            SCREEN.blit(ABOUT_HOVER, (WIDTH / 2 - ABOUT_HOVER.get_width() / 2, HEIGHT/2 + 48))
+            if click:
+                about()
+
+        clock.tick(60)
+        pygame.display.update()
+
+def about():
+    while True:
+        mx, my = pygame.mouse.get_pos()
+        click = False
+
+        # Draw main menu background
+        SCREEN.blit(MENUBG_IMG, (0, 0))
+
+        for event in pygame.event.get():
+            if event.type == QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == MOUSEBUTTONDOWN:
+                if event.button == 1:
+                    click = True
+
+        # Button hover and click dynamics
+
+        clock.tick(60)
+        pygame.display.update()
+
+
+game_over()
 """-- Game Loop --"""
