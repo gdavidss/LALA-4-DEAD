@@ -26,13 +26,19 @@ ABOUT_HOVER = pygame.image.load(os.path.join("img", "about_hover.png"))
 BACKGROUND_IMG = pygame.image.load(os.path.join("img", "background.png"))
 GAMEBAR_IMG = pygame.image.load(os.path.join("img", "game_bar.png"))
 PLAYER_IMG = pygame.image.load(os.path.join("img", "player.png"))
-ENEMY_IMG = pygame.image.load(os.path.join("img", "enemy.png"))
 BULLET_IMG = pygame.image.load(os.path.join("img", "flame.gif"))
+ENEMY1_IMG = pygame.image.load(os.path.join("img", "enemy.png"))
+ENEMY2_IMG = pygame.image.load(os.path.join("img", "enemy2.png"))
+ENEMY3_IMG = pygame.image.load(os.path.join("img", "enemy3.png"))
+ENEMY4_IMG = pygame.image.load(os.path.join("img", "enemy4.png"))
 
 # Appropriate image transformations
 BULLET_IMG = pygame.transform.scale(BULLET_IMG, (32, 32))
 BULLET_IMG = pygame.transform.flip(BULLET_IMG, 0, 1)
-ENEMY_IMG = pygame.transform.scale(ENEMY_IMG, (74, 64))
+ENEMY1_IMG = pygame.transform.scale(ENEMY1_IMG, (74, 64))
+ENEMY2_IMG = pygame.transform.scale(ENEMY2_IMG, (74, 64))
+ENEMY3_IMG = pygame.transform.scale(ENEMY3_IMG, (74, 64))
+ENEMY4_IMG = pygame.transform.scale(ENEMY4_IMG, (74, 64))
 BACKGROUND_IMG = pygame.transform.scale(BACKGROUND_IMG, (WIDTH, HEIGHT))
 
 # Load Font
@@ -189,7 +195,7 @@ class Player(Character):
 class Enemy(Character):
     def __init__(self, x, y):
         super().__init__(x, y)
-        self.character_img = ENEMY_IMG
+        self.character_img = random.choice([ENEMY1_IMG, ENEMY2_IMG, ENEMY3_IMG, ENEMY4_IMG])
         self.mask = pygame.mask.from_surface(self.character_img)
 
     def move(self, vel):
@@ -209,7 +215,8 @@ class HealthBonus():
         self.y += vel
 
     def bonus_type(self):
-        if random.randint(1,10) > 8:
+        # 30% chances of getting Llama (100HP) and 70% of 20HP
+        if random.randint(1,10) >= 7:
             self.bonus_img = BULLET_IMG
             self.health = 100
         else:
@@ -475,5 +482,5 @@ def about():
         pygame.display.update()
 
 
-game_over()
+main_menu()
 """-- Game Loop --"""
