@@ -7,7 +7,6 @@ from pygame.locals import *
 
 # Initialize pygame, sound mixer, screen and font
 pygame.init()
-pygame.mixer.init()
 WIDTH, HEIGHT = 800, 600
 SCREEN = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("LALA 4 DEAD")
@@ -24,7 +23,7 @@ GAMEBAR_IMG = pygame.image.load(os.path.join("img", "game_bar.png"))
 PLAYER_IMG = pygame.image.load(os.path.join("img", "player.png"))
 HEALTHBONUS_IMG = [pygame.image.load(os.path.join("img", "healthbonus1.png")), pygame.image.load(os.path.join("img", "healthbonus2.png"))]
 BULLET_IMG = [pygame.image.load(os.path.join("img", "bullet_0.png")), pygame.image.load(os.path.join("img", "bullet_1.png"))]
-ENEMY_IMG = [pygame.image.load(os.path.join("img", "enemy.png")), pygame.image.load(os.path.join("img", "enemy2.png")), pygame.image.load(os.path.join("img", "enemy3.png")), pygame.image.load(os.path.join("img", "enemy4.png"))]
+ENEMY_IMG = [pygame.image.load(os.path.join("img", "enemy1.png")), pygame.image.load(os.path.join("img", "enemy2.png")), pygame.image.load(os.path.join("img", "enemy3.png")), pygame.image.load(os.path.join("img", "enemy4.png"))]
 
 # Appropriate image transformations
 BULLET_IMG[0] = pygame.transform.scale(BULLET_IMG[0], (32, 32))
@@ -42,11 +41,11 @@ GAME_FONT = pygame.font.Font(("8BitMadness.ttf"), 42)
 GAMEOVER_FONT = pygame.font.SysFont('8BitMadness.ttf', 90)
 
 # Load Sounds
-BG_SOUND = mixer.music.load('sounds/background.ogg')
-PAUSE_SOUND = mixer.Sound('sounds/pause.ogg')
-SPAWN_SOUND = mixer.Sound('sounds/SpawnSound.ogg')
-BULLET_SOUND = mixer.Sound('sounds/bullet.ogg')
-GAMEOVER_SOUND = mixer.Sound('sounds/GameOver.wav')
+#BG_SOUND = mixer.music.load('sounds/background.ogg')
+#PAUSE_SOUND = mixer.Sound('sounds/pause.ogg')
+#SPAWN_SOUND = mixer.Sound('sounds/SpawnSound.ogg')
+#BULLET_SOUND = mixer.Sound('sounds/bullet.ogg')
+#GAMEOVER_SOUND = mixer.Sound('sounds/GameOver.wav')
 
 # Background and sound
 ##mixer.music.play(-1)
@@ -68,6 +67,7 @@ class Bullet:
         self.x = x
         self.y = y
         self.img = img
+        self.img_state = 0
         self.mask = pygame.mask.from_surface(self.img)
 
     def draw(self, window):
@@ -151,7 +151,7 @@ class Player(Character):
         Checks if cooldown is zero to allow bullet to be shot
         """
         if self.cool_down_counter == 0 and self.specialfire_state == False:
-            BULLET_SOUND.play()
+            #BULLET_SOUND.play()
             bullet = Bullet(self.x+10, self.y, self.bullet_img)
             self.bullets.append(bullet)
             self.cool_down_counter = 1
@@ -187,7 +187,6 @@ class Player(Character):
         offset_y = enemy.y - self.specialfire_y
         return self.specialfire_mask.overlap(enemy.mask, (offset_x, offset_y)) != None
 
-
 class Enemy(Character):
     def __init__(self, x, y):
         super().__init__(x, y)
@@ -222,7 +221,7 @@ class HealthBonus():
 def game():
     # VARIABLES
     running = True
-    FPS = 60
+    FPS = 200
     gameover = False
 
     wave_value = 0
@@ -238,6 +237,8 @@ def game():
     health_bonuses = []
     hbonus_vel = 3
 
+    # Timer that unlocks special fire every minute
+    pygame.time.set_timer(USEREVENT, 5000)
 
     # REDRAW WINDOW
     def redraw_window():
@@ -281,13 +282,13 @@ def game():
         """
         pauses the game
         """
-        PAUSE_SOUND.play()
+        #PAUSE_SOUND.play()
         paused = True
         while paused:
             for event in pygame.event.get():
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_p:
-                        PAUSE_SOUND.play()
+                        #PAUSE_SOUND.play()
                         paused = False
                 if event.type == pygame.QUIT:
                     pygame.quit()
@@ -296,9 +297,6 @@ def game():
             SCREEN.blit(GAME_FONT.render("Press P to continue", True, (0, 0, 0)), (250, 300))
             pygame.display.update()
             clock.tick(5)
-
-    # Timer that unlocks special fire every minute
-    pygame.time.set_timer(USEREVENT, 60000)
 
     # GAME LOOP
     while running:
@@ -318,15 +316,15 @@ def game():
             # Unlocks specialfire after one minute
             if event.type == USEREVENT:
                 player.specialfire_state = True
-                pygame.time.set_timer(USEREVENT + 1, 4000)
+                pygame.time.set_timer(USEREVENT+1, 1000)
             if event.type == USEREVENT+1:
                 player.specialfire_state = False
 
         # Movement dynamics that allow two keys to be pressed simultaneously
         keys = pygame.key.get_pressed()
         if keys[pygame.K_LEFT] and player.x - player_vel > 0:
-            player.x -= player_vel
             player.character_img = pygame.transform.flip(PLAYER_IMG, 0, 0)
+            player.x -= player_vel
             if player.specialfire_state:
                 player.specialfire_x -= player_vel
         if keys[pygame.K_RIGHT] and player.x + player_vel + player.get_width() < WIDTH:
@@ -345,7 +343,7 @@ def game():
                 # Since enemies have the same vel, spawn them off screen to create different Y positions
                 enemy = Enemy(random.randrange(100, WIDTH - 100), random.randrange(-1500, -100))
                 enemies.append(enemy)
-            SPAWN_SOUND.play()
+            #SPAWN_SOUND.play()
             # Spawn random bonus every 4 levels
             if wave_value % 3 == 0:
                 bonus = HealthBonus(random.randrange(100, WIDTH - 100), random.randrange(-1500, -100))
@@ -370,17 +368,19 @@ def game():
 
             # Feels damage if enemy collides with player or get to the bottom
             if collide(enemy, player) or enemy.y + enemy.get_height() > HEIGHT:
-                player.health -= 10
+                player.health -= 0
                 enemies.remove(enemy)
-
-            if player.specialfire_collision(enemy):
-                enemies.remove(enemy)
-                player.score_value += 1
+            # This if below fixes a bug of certain enemies colliding randomly when there special fire wasn't on
+            if player.specialfire_state:
+                if player.specialfire_collision(enemy):
+                    enemies.remove(enemy)
+                    print(f"Enemy collided at x: {enemy.x}, y: {enemy.y}")
+                    player.score_value += 1
 
         player.move_bullets(bullet_vel, enemies)
 
 def game_over():
-    GAMEOVER_SOUND.play()
+    #GAMEOVER_SOUND.play()
     while True:
         mx, my = pygame.mouse.get_pos()
         click = False
@@ -408,12 +408,12 @@ def game_over():
         if playagain_button.collidepoint((mx, my)):
             SCREEN.blit(PLAYAGAIN_IMG[1],(WIDTH / 2 - PLAYAGAIN_IMG[1].get_width() / 2, HEIGHT / 2 - PLAYAGAIN_IMG[1].get_height() / 2 + 16))
             if click:
-                GAMEOVER_SOUND.stop()
+                #GAMEOVER_SOUND.stop()
                 game()
         if mainmenu_button.collidepoint((mx, my)):
             SCREEN.blit(MAINMENU_IMG[1], (WIDTH / 2 - MAINMENU_IMG[1].get_width() / 2, HEIGHT / 2 + 64))
             if click:
-                GAMEOVER_SOUND.stop()
+                #GAMEOVER_SOUND.stop()
                 main_menu()
 
         clock.tick(60)
@@ -478,4 +478,3 @@ def about():
         pygame.display.update()
 
 main_menu()
-"""-- Game Loop --"""
