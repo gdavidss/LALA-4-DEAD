@@ -22,12 +22,14 @@ BACKGROUND_IMG = pygame.image.load(os.path.join("img", "background.png"))
 GAMEBAR_IMG = pygame.image.load(os.path.join("img", "game_bar.png"))
 PLAYER_IMG = pygame.image.load(os.path.join("img", "player.png"))
 HEALTHBONUS_IMG = [pygame.image.load(os.path.join("img", "healthbonus1.png")), pygame.image.load(os.path.join("img", "healthbonus2.png"))]
-BULLET_IMG = [pygame.image.load(os.path.join("img", "bullet_0.png")), pygame.image.load(os.path.join("img", "bullet_1.png"))]
+BULLET_IMG = pygame.image.load(os.path.join("img", "bullet.png"))
 ENEMY_IMG = [pygame.image.load(os.path.join("img", "enemy1.png")), pygame.image.load(os.path.join("img", "enemy2.png")), pygame.image.load(os.path.join("img", "enemy3.png")), pygame.image.load(os.path.join("img", "enemy4.png"))]
+SPECIALFIRE_IMG = pygame.image.load(os.path.join("img", "specialfire_img.png"))
+SPECIALFIRE_NOT = pygame.image.load(os.path.join("img", "specialfire_notification.png"))
+FLAMEBONUS_IMG = pygame.image.load(os.path.join("img", "flame_bonus.png"))
 
 # Appropriate image transformations
-BULLET_IMG[0] = pygame.transform.scale(BULLET_IMG[0], (32, 32))
-BULLET_IMG[1] = pygame.transform.scale(BULLET_IMG[1], (32, 32))
+BULLET_IMG = pygame.transform.scale(BULLET_IMG, (32, 32))
 ENEMY_IMG[0] = pygame.transform.scale(ENEMY_IMG[0], (84, 70))
 ENEMY_IMG[1] = pygame.transform.scale(ENEMY_IMG[1], (74, 64))
 ENEMY_IMG[2] = pygame.transform.scale(ENEMY_IMG[2], (74, 64))
@@ -107,17 +109,19 @@ class Player(Character):
         super().__init__(x, y)
         self.character_img = PLAYER_IMG
         self.health = health
-        self.bullet_img = BULLET_IMG[0]
+        self.bullet_img = BULLET_IMG
         self.bullets = []
         self.score_value = 0
         self.mask = pygame.mask.from_surface(self.character_img)
         self.max_health = health
 
         # Special fire bonus
-        self.specialfire_x = self.x + 10
-        self.specialfire_y = -self.y + 400
+        self.firebonus_max = 30
+        self.firebonus = 0
+        self.specialfire_x = self.x + 20
+        self.specialfire_y = -self.y + 500
         self.specialfire_state = False
-        self.specialfire_image = pygame.transform.scale(PLAYER_IMG, (32, HEIGHT))
+        self.specialfire_image = SPECIALFIRE_IMG
         self.specialfire_mask = pygame.mask.from_surface(self.specialfire_image)
 
     def move_bullets(self, vel, enemies):
@@ -134,6 +138,7 @@ class Player(Character):
                     if bullet.bullet_collision(enemy):
                         enemies.remove(enemy)
                         self.score_value += 1
+                        self.firebonus += 1
                         if bullet in self.bullets:
                             self.bullets.remove(bullet)
 
@@ -171,6 +176,11 @@ class Player(Character):
         """
         pygame.draw.rect(window, (255, 0, 0), (self.x, self.y + self.character_img.get_height() + 10, self.character_img.get_width(), 10))
         pygame.draw.rect(window, (0, 255, 0), (self.x, self.y + self.character_img.get_height() + 10, self.character_img.get_width() * (self.health / self.max_health), 10))
+
+    def specialfire_bar(self, window):
+        pygame.draw.rect(window, (0, 0, 0), (20, 70, 15, 100))
+        pygame.draw.rect(window, (245, 239, 66), (20, 170, 15, -(100 * (self.firebonus/self.firebonus_max))))
+        window.blit(FLAMEBONUS_IMG, (20, 175))
 
     def specialfire_draw(self, window):
         """
@@ -221,7 +231,7 @@ class HealthBonus():
 def game():
     # VARIABLES
     running = True
-    FPS = 200
+    FPS = 60
     gameover = False
 
     wave_value = 0
@@ -232,13 +242,13 @@ def game():
 
     enemies = []
     num_of_enemies = 0
-    enemy_vel = 2
+    enemy_vel = 3
 
     health_bonuses = []
-    hbonus_vel = 3
+    hbonus_vel = 4
 
-    # Timer that unlocks special fire every minute
-    pygame.time.set_timer(USEREVENT, 5000)
+    # timer of 1/10 of second for sprite animation
+    pygame.time.set_timer(USEREVENT + 1, 100)
 
     # REDRAW WINDOW
     def redraw_window():
@@ -257,9 +267,16 @@ def game():
         if player.specialfire_state:
             player.specialfire_draw(SCREEN)
 
+        # Draw specialfire bonus if on
+        if player.firebonus >= player.firebonus_max:
+            SCREEN.blit(SPECIALFIRE_NOT, (20, 50))
+        else:
+            player.specialfire_bar(SCREEN)
+
         # Draw player
         player.draw(SCREEN)
 
+        # Draw Game bar on screen
         SCREEN.blit(GAMEBAR_IMG, (0, 0))
 
         # Render text
@@ -306,6 +323,9 @@ def game():
         if player.health <= 0:
             gameover = True
 
+        if player.firebonus > player.firebonus_max:
+            player.firebonus = player.firebonus_max
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
@@ -313,12 +333,18 @@ def game():
             if event.type == KEYDOWN:
                 if event.key == K_SPACE:
                     player.shoot()
-            # Unlocks specialfire after one minute
+                if player.firebonus >= player.firebonus_max:
+                    if event.key == K_LCTRL:
+                        player.specialfire_state = True
+                        pygame.time.set_timer(USEREVENT, 10000)
+                        player.firebonus = 0
+            # Deactivates fire bonus after some time
             if event.type == USEREVENT:
-                player.specialfire_state = True
-                pygame.time.set_timer(USEREVENT+1, 1000)
-            if event.type == USEREVENT+1:
                 player.specialfire_state = False
+            # Sprite animation for fire bonus
+            if event.type == USEREVENT +1:
+                if player.specialfire_state:
+                    player.specialfire_image = pygame.transform.flip(player.specialfire_image, 1, 0)
 
         # Movement dynamics that allow two keys to be pressed simultaneously
         keys = pygame.key.get_pressed()
@@ -341,13 +367,20 @@ def game():
             num_of_enemies += 1
             for i in range(num_of_enemies):
                 # Since enemies have the same vel, spawn them off screen to create different Y positions
-                enemy = Enemy(random.randrange(100, WIDTH - 100), random.randrange(-1500, -100))
+                enemy = Enemy(random.randrange(100, WIDTH - 100), random.randrange(-1700, -100))
                 enemies.append(enemy)
             #SPAWN_SOUND.play()
-            # Spawn random bonus every 4 levels
+
+            # Spawn random bonus every 3 waves
             if wave_value % 3 == 0:
-                bonus = HealthBonus(random.randrange(100, WIDTH - 100), random.randrange(-1500, -100))
+                bonus = HealthBonus(random.randrange(100, WIDTH - 100), random.randrange(-1700, -100))
                 health_bonuses.append(bonus)
+
+            # Player and bullet gain velocity every 10 waves
+            if wave_value % 10 == 0:
+                player_vel += 1
+                bullet_vel -=1
+
 
         # Health bonus
         for health_bonus in health_bonuses[:]:
@@ -368,14 +401,18 @@ def game():
 
             # Feels damage if enemy collides with player or get to the bottom
             if collide(enemy, player) or enemy.y + enemy.get_height() > HEIGHT:
-                player.health -= 0
+                player.health -= 10
                 enemies.remove(enemy)
             # This if below fixes a bug of certain enemies colliding randomly when there special fire wasn't on
             if player.specialfire_state:
-                if player.specialfire_collision(enemy):
-                    enemies.remove(enemy)
-                    print(f"Enemy collided at x: {enemy.x}, y: {enemy.y}")
-                    player.score_value += 1
+                # Prevents game from crashing due to error "list ran out of index" (i've no idea why it happens)
+                try:
+                    if player.specialfire_collision(enemy):
+                        enemies.remove(enemy)
+                        player.score_value += 1
+                        player.firebonus += 1
+                except:
+                    pass
 
         player.move_bullets(bullet_vel, enemies)
 
@@ -477,4 +514,4 @@ def about():
         clock.tick(60)
         pygame.display.update()
 
-main_menu()
+game()
