@@ -116,7 +116,7 @@ class Player(Character):
         self.max_health = health
 
         # Special fire bonus
-        self.firebonus_max = 30
+        self.firebonus_max = 40
         self.firebonus = 0
         self.specialfire_x = self.x + 20
         self.specialfire_y = -self.y + 500
@@ -236,8 +236,8 @@ def game():
 
     wave_value = 0
 
-    player = Player(370, 480)
-    player_vel = 8
+    player = Player(370, 500)
+    player_vel = 6
     bullet_vel = -9
 
     enemies = []
@@ -282,11 +282,11 @@ def game():
         # Render text
         score_text = GAME_FONT.render(f"Score: {player.score_value}", 1, (0, 0, 0))
         life_text = GAME_FONT.render(f"HP: {player.health}", 1, (0, 0, 0))
-        level_text = GAME_FONT.render(f"Wave: {wave_value}", 1, (0, 0, 0))
+        level_text = GAME_FONT.render(f"Wave: {wave_value}/30", 1, (0, 0, 0))
 
         # Put rendered text on screen
         SCREEN.blit(score_text, (10, 10))
-        SCREEN.blit(life_text, (WIDTH - level_text.get_width(), 10))
+        SCREEN.blit(life_text, (WIDTH - life_text.get_width()-10, 10))
         SCREEN.blit(level_text, ((WIDTH - level_text.get_width()) // 2, 10))
 
         if gameover:
@@ -336,7 +336,7 @@ def game():
                 if player.firebonus >= player.firebonus_max:
                     if event.key == K_LCTRL:
                         player.specialfire_state = True
-                        pygame.time.set_timer(USEREVENT, 10000)
+                        pygame.time.set_timer(USEREVENT, 5000)
                         player.firebonus = 0
             # Deactivates fire bonus after some time
             if event.type == USEREVENT:
@@ -378,9 +378,8 @@ def game():
 
             # Player and bullet gain velocity every 10 waves
             if wave_value % 10 == 0:
-                player_vel += 1
-                bullet_vel -=1
-
+                player_vel += 2
+                bullet_vel -=2
 
         # Health bonus
         for health_bonus in health_bonuses[:]:
@@ -514,4 +513,4 @@ def about():
         clock.tick(60)
         pygame.display.update()
 
-game()
+main_menu()
