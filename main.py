@@ -7,7 +7,7 @@ from pygame.locals import *
 
 # Initialize pygame, sound mixer, screen and font
 pygame.init()
-#pygame.mixer.init()
+pygame.mixer.init()
 WIDTH, HEIGHT = 800, 600
 SCREEN = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("LALA 4 DEAD")
@@ -22,6 +22,7 @@ ABOUT_IMG = [pygame.image.load(os.path.join("img", "about.png")), pygame.image.l
 ABOUT_BG = pygame.image.load(os.path.join("img", "about_bg.png"))
 MAINMENU_BUTTON = [pygame.image.load(os.path.join("img", "mainmenu_button.png")), pygame.image.load(os.path.join("img", "mainmenu_hover.png"))]
 BACKGROUND_IMG = pygame.image.load(os.path.join("img", "background.png"))
+GAMEWIN_BG = pygame.image.load(os.path.join("img", "youwin_bg.png"))
 GAMEBAR_IMG = pygame.image.load(os.path.join("img", "game_bar.png"))
 PLAYER_IMG = pygame.image.load(os.path.join("img", "player.png"))
 HEALTHBONUS_IMG = [pygame.image.load(os.path.join("img", "healthbonus1.png")), pygame.image.load(os.path.join("img", "healthbonus2.png"))]
@@ -44,13 +45,14 @@ BACKGROUND_IMG = pygame.transform.scale(BACKGROUND_IMG, (WIDTH, HEIGHT))
 # Load Font
 GAME_FONT = pygame.font.Font(("8BitMadness.ttf"), 42)
 GAMEOVER_FONT = pygame.font.SysFont('8BitMadness.ttf', 90)
-"""
+
 # Load Sounds
 BG_SOUND = mixer.music.load('sounds/game_song.ogg')
 PAUSE_SOUND = mixer.Sound('sounds/pause.ogg')
 SPAWN_SOUND = mixer.Sound('sounds/SpawnSound.ogg')
 BULLET_SOUND = mixer.Sound('sounds/bullet.ogg')
 GAMEOVER_SOUND = mixer.Sound('sounds/GameOver.wav')
+GAMEWIN_SOUND = mixer.Sound('sounds/game_win.ogg')
 SPECIALFIRE_SOUND = mixer.Sound('sounds/specialfire.ogg')
 HEALTHBONUS_SOUND = mixer.Sound('sounds/healthbonus.ogg')
 HIT_SOUND = mixer.Sound('sounds/hit.ogg')
@@ -61,9 +63,9 @@ mixer.Sound.set_volume(BULLET_SOUND, 0.4)
 mixer.Sound.set_volume(HEALTHBONUS_SOUND, 0.4)
 mixer.Sound.set_volume(SPECIALFIRE_SOUND, 0.6)
 mixer.Sound.set_volume(GAMEOVER_SOUND, 0.5)
+mixer.Sound.set_volume(GAMEWIN_SOUND, 0.5)
 mixer.Sound.set_volume(PAUSE_SOUND, 0.5)
 mixer.Sound.set_volume(HIT_SOUND, 0.4)
-"""
 
 """""-- Timers --"""
 # Clock helps to limit fps
@@ -173,7 +175,7 @@ class Player(Character):
         Checks if cooldown is zero to allow bullet to be shot
         """
         if self.cool_down_counter == 0 and self.specialfire_state == False:
-            #BULLET_SOUND.play()
+            BULLET_SOUND.play()
             bullet = Bullet(self.x+10, self.y, self.bullet_img)
             self.bullets.append(bullet)
             self.cool_down_counter = 1
@@ -247,8 +249,8 @@ class HealthBonus():
 
 def game():
     # Background Music
-    #mixer.music.play(-1)
-    #mixer.music.set_volume(0.2)
+    mixer.music.play(-1)
+    mixer.music.set_volume(0.2)
     # VARIABLES
     running = True
     FPS = 60
@@ -289,8 +291,7 @@ def game():
             player.specialfire_draw(SCREEN)
 
         if wave_value == 30:
-            #game_win()
-            pass
+            game_win()
 
         # Draw specialfire bonus if on
         if player.firebonus >= player.firebonus_max:
@@ -325,14 +326,14 @@ def game():
         """
         pauses the game
         """
-        #PAUSE_SOUND.play()
-        #pygame.mixer.music.pause()
+        PAUSE_SOUND.play()
+        pygame.mixer.music.pause()
         paused = True
         while paused:
             for event in pygame.event.get():
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_p:
-                        #PAUSE_SOUND.play()
+                        PAUSE_SOUND.play()
                         pygame.mixer.music.unpause()
                         paused = False
                 if event.type == pygame.QUIT:
@@ -366,7 +367,7 @@ def game():
                     if event.key == K_LCTRL:
                         player.specialfire_state = True
                         pygame.time.set_timer(USEREVENT, 5000)
-                        #SPECIALFIRE_SOUND.play()
+                        SPECIALFIRE_SOUND.play()
                         player.firebonus = 0
 
             # Deactivates fire bonus after some time
@@ -402,7 +403,7 @@ def game():
                 # Since enemies have the same vel, spawn them off screen to create different Y positions
                 enemy = Enemy(random.randrange(100, WIDTH - 100), random.randrange(spawn_maxheight, -50))
                 enemies.append(enemy)
-            #SPAWN_SOUND.play()
+            SPAWN_SOUND.play()
 
             # Spawn random bonus every 3 waves
             if wave_value % 3 == 0:
@@ -424,7 +425,7 @@ def game():
                     player.health = 100
                 else:
                     player.health += bonus.health
-                #HEALTHBONUS_SOUND.play()
+                HEALTHBONUS_SOUND.play()
                 health_bonuses.remove(bonus)
 
             if bonus.y > HEIGHT:
@@ -436,7 +437,7 @@ def game():
             # Feels damage if enemy collides with player or get to the bottom
             if collide(enemy, player) or enemy.y + enemy.get_height() > HEIGHT:
                 player.health -= 10
-                #HIT_SOUND.play()
+                HIT_SOUND.play()
                 enemies.remove(enemy)
             # This if below fixes a bug of certain enemies colliding randomly when there special fire wasn't on
             if player.specialfire_state:
@@ -452,7 +453,7 @@ def game():
         player.move_bullets(bullet_vel, enemies)
 
 def game_over():
-    #GAMEOVER_SOUND.play()
+    GAMEOVER_SOUND.play()
     while True:
         mx, my = pygame.mouse.get_pos()
         click = False
@@ -480,12 +481,12 @@ def game_over():
         if playagain_button.collidepoint((mx, my)):
             SCREEN.blit(PLAYAGAIN_IMG[1],(WIDTH / 2 - PLAYAGAIN_IMG[1].get_width() / 2, HEIGHT / 2 - PLAYAGAIN_IMG[1].get_height() / 2 + 16))
             if click:
-                #GAMEOVER_SOUND.stop()
+                GAMEOVER_SOUND.stop()
                 game()
         if mainmenu_button.collidepoint((mx, my)):
             SCREEN.blit(MAINMENU_IMG[1], (WIDTH / 2 - MAINMENU_IMG[1].get_width() / 2, HEIGHT / 2 + 64))
             if click:
-                #GAMEOVER_SOUND.stop()
+                GAMEOVER_SOUND.stop()
                 main_menu()
 
         clock.tick(60)
@@ -524,6 +525,46 @@ def main_menu():
             SCREEN.blit(ABOUT_IMG[1], (WIDTH / 2 - ABOUT_IMG[1].get_width() / 2, HEIGHT / 2 + 48))
             if click:
                 about()
+
+        clock.tick(60)
+        pygame.display.update()
+
+def game_win():
+    GAMEWIN_SOUND.play()
+    while True:
+        mx, my = pygame.mouse.get_pos()
+        click = False
+
+        # Draw main menu background
+        SCREEN.blit(GAMEWIN_BG, (0, 0))
+
+        # Draw buttons on screen
+        SCREEN.blit(PLAYAGAIN_IMG[0], (WIDTH / 2 - PLAYAGAIN_IMG[0].get_width() / 2, HEIGHT / 2 - PLAYAGAIN_IMG[0].get_height() / 2+16))
+        SCREEN.blit(MAINMENU_IMG[0], (WIDTH / 2 - MAINMENU_IMG[0].get_width() / 2, HEIGHT / 2 + 64))
+
+        # Creating invisble rectangular object on buttons to allow click
+        playagain_button = PLAYAGAIN_IMG[0].get_rect(x=WIDTH / 2 - PLAYAGAIN_IMG[0].get_width() / 2, y=HEIGHT / 2 - PLAYAGAIN_IMG[0].get_height() / 2+16)
+        mainmenu_button = MAINMENU_IMG[0].get_rect(x=WIDTH / 2 - MAINMENU_IMG[0].get_width() / 2, y=HEIGHT / 2 + 64)
+
+        for event in pygame.event.get():
+            if event.type == QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == MOUSEBUTTONDOWN:
+                if event.button == 1:
+                    click = True
+
+        # Button hover and click dynamics
+        if playagain_button.collidepoint((mx, my)):
+            SCREEN.blit(PLAYAGAIN_IMG[1],(WIDTH / 2 - PLAYAGAIN_IMG[1].get_width() / 2, HEIGHT / 2 - PLAYAGAIN_IMG[1].get_height() / 2 + 16))
+            if click:
+                GAMEWIN_SOUND.stop()
+                game()
+        if mainmenu_button.collidepoint((mx, my)):
+            SCREEN.blit(MAINMENU_IMG[1], (WIDTH / 2 - MAINMENU_IMG[1].get_width() / 2, HEIGHT / 2 + 64))
+            if click:
+                GAMEWIN_SOUND.stop()
+                main_menu()
 
         clock.tick(60)
         pygame.display.update()
