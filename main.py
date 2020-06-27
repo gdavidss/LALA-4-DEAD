@@ -291,6 +291,7 @@ def game():
             player.specialfire_draw(SCREEN)
 
         if wave_value == 30:
+            mixer.music.stop()
             game_win()
 
         # Draw specialfire bonus if on
