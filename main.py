@@ -290,7 +290,7 @@ def game():
         if player.specialfire_state:
             player.specialfire_draw(SCREEN)
 
-        if wave_value == 30:
+        if wave_value == 31:
             mixer.music.stop()
             game_win()
 
