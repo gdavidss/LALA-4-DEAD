@@ -13,7 +13,7 @@ SCREEN = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("LALA 4 DEAD")
 
 # Load images
-MENUBG_IMG = pygame.image.load(os.path.join("img", "menu_bg.png"))
+MENUBG_IMG = pygame.image.load("img/menu_bg.png")
 GAMEOVER_BG = pygame.image.load(os.path.join("img", "gameover_bg.png"))
 PLAYAGAIN_IMG = [pygame.image.load(os.path.join("img", "gm_playagain.png")), pygame.image.load(os.path.join("img", "gm_playagain_hover.png"))]
 MAINMENU_IMG = [pygame.image.load(os.path.join("img", "gm_mainmenu.png")), pygame.image.load(os.path.join("img", "gm_mainmenu_hover.png"))]
@@ -41,6 +41,9 @@ ENEMY_IMG[3] = pygame.transform.scale(ENEMY_IMG[3], (74, 70))
 HEALTHBONUS_IMG[0] = pygame.transform.scale(HEALTHBONUS_IMG[0], (48, 48))
 HEALTHBONUS_IMG[1] = pygame.transform.scale(HEALTHBONUS_IMG[1], (32, 48))
 BACKGROUND_IMG = pygame.transform.scale(BACKGROUND_IMG, (WIDTH, HEIGHT))
+
+# Add Icon
+pygame.display.set_icon(PLAYER_IMG)
 
 # Load Font
 GAME_FONT = pygame.font.Font(("8BitMadness.ttf"), 42)
@@ -253,7 +256,7 @@ def game():
     mixer.music.set_volume(0.2)
     # VARIABLES
     running = True
-    FPS = 60
+    FPS = 100
     gameover = False
 
     wave_value = 0
